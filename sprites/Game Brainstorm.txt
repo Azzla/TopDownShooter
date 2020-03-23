@@ -1,0 +1,29 @@
+Gameplay:
+- RPG
+- Camera
+- Movement
+- Leveling System
+- Weapons/Spells/Potions
+- Gold/Shop Mechanics
+- Loot/Chests
+- Dialogue
+- NPCs
+- Boss Fight
+- Health/Armor/Damage/Intellect Skills
+- Story
+
+Pixel Art:
+- Characters
+- User Interface
+- Weapons
+- Armor
+- Enemies
+- Projectiles
+- Animations
+- Backgrounds
+- Tilesets (if applicable)
+
+Audio:
+- OST (Main Themes, Variations, Level-Based)
+- Sound Effects
+- Mastering
