@@ -7,4 +7,6 @@ Movement: WASD
 Shoot: Mouse
 
 Shop Info:
-"K" to open the shop.  "Z" to purchase attack, "X" to purchase speed, "C" to purchase fire rate, "B" to purchase health.
+"L_Shift" to open the shop.  "Z" to purchase attack, "X" to purchase speed, "C" to purchase fire rate, "V" to purchase magnet.
+
+"B" to purchase +25% health.
