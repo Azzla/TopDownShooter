@@ -3,9 +3,11 @@ My first ever, disastrously organized, minimally scoped LOVE2D game.  Written in
 
 Uses camera.lua from the hump-master library, anim8-master for animation, and simple-tiled-implementation for tilesets.
 
-## Movement: WASD
+## Movement:
+WASD keys to move.  Space key to dash.
 
-## Shoot: Mouse
+## Shoot:
+Mouse to aim, mouse1 to fire.
 
 ## Shop Info:
 ```
