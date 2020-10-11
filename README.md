@@ -16,3 +16,9 @@ Mouse to aim, mouse1 to fire.
 ```
 "B" to purchase +25% health.
 ```
+
+## Dependencies:
+- Anim8.lua framework for sprite animation.
+- hump-camera.lua for camera control and rendering.
+- tween.lua for tweening animations.
+- SimpleTI framework for tilemaps and background rendering.
