@@ -1,7 +1,7 @@
 # TopDownShooter
 My first ever, disastrously organized, minimally scoped LOVE2D game.  Written in LUA.
 
-Uses camera.lua from the hump-master library, anim8-master for animation, and simple-tiled-implementation for tilesets.
+Uses camera.lua from the hump.lua library, anim8 for animation, and simple-tiled-implementation for tilesets.
 
 ## Movement:
 WASD keys to move.  Space key to dash.
