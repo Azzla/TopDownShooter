@@ -23,7 +23,15 @@ function helpScreen()
   menuBtnsDrawn = false
   mouseX,mouseY = love.mouse:getPosition()
   love.graphics.draw(menu.background, 0, 0, nil, screen_width / menu.background:getWidth(), screen_height / menu.background:getHeight())
-  love.graphics.draw(love.graphics.newImage('sprites/UIShop.png'), screen_width / 2, screen_height / 2, nil, nil, nil, 112, 78)
+  love.graphics.draw(love.graphics.newImage('sprites/UIShop.png'), screen_width / 2, screen_height / 2, nil, 6, 6, 112, 78)
+  --tips
+  love.graphics.print("Movement: WASD", screen_width / 2 - 600, screen_height / 2 - 300, nil, 3, 3)
+  love.graphics.print("Shoot: Mouse1", screen_width / 2 - 600, screen_height / 2 - 200, nil, 3, 3)
+  love.graphics.print("Reload: R", screen_width / 2 - 600, screen_height / 2 - 100, nil, 3, 3)
+  love.graphics.print("Dash: Spacebar", screen_width / 2 - 600, screen_height / 2, nil, 3, 3)
+  love.graphics.print("Shop: Shift", screen_width / 2 - 600, screen_height / 2 + 100, nil, 3, 3)
+  love.graphics.print("Pause: Escape", screen_width / 2 - 600, screen_height / 2 + 200, nil, 3, 3)
+  love.graphics.print("Quit Game: End", screen_width / 2 - 600, screen_height / 2 + 300, nil, 3, 3)
 
   if not backBtnDrawn then
     menuButtons = {}
