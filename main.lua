@@ -49,6 +49,7 @@ function love.load()
 end
 
 function love.update(dt)
+  gameMusic(dt)
   if round.gameState == 4 then
     globalTimer.update(dt)
   end
@@ -67,7 +68,6 @@ function love.update(dt)
     updateGold(dt)
     energyUpdate(dt)
     particleUpdate(dt)
-    gameMusic(dt)
     powerupUpdate(dt)
     roundTimer:update(dt)
     mainMap:update(dt)
