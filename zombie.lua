@@ -1,8 +1,12 @@
 zombies = {}
 zomAssets = {}
 zomAssets.zombieFrame = love.graphics.newImage('sprites/zombies/zombie.png')
+zomAssets.zombieWidth = zomAssets.zombieFrame:getWidth()
+zomAssets.zombieHeight = zomAssets.zombieFrame:getHeight()
 zomAssets.zombieSprite = love.graphics.newImage('sprites/zombies/zombieWalk.png')
 zomAssets.bigZombieFrame = love.graphics.newImage('sprites/zombies/zombieBig.png')
+zomAssets.zombieBigWidth = zomAssets.bigZombieFrame:getWidth()
+zomAssets.zombieBigHeight = zomAssets.bigZombieFrame:getHeight()
 zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWalk.png')
 zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
 zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
@@ -10,6 +14,7 @@ zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmal
 function spawnZombie()
   local side = math.random(1,4)
   local zombie = {}
+  zombie.isZombie = true
   zombie.x = 0
   zombie.y = 0
   zombie.vx = 0
@@ -27,7 +32,10 @@ function spawnZombie()
   zombie.damage = 15
   zombie.sprite = zomAssets.zombieSprite
   zombie.frame = zomAssets.zombieFrame
+  zombie.width = zombie.frame:getWidth()
+  zombie.height = zombie.frame:getHeight()
   zombie.dead = false
+  zombie.collideable = true
   zombie.zombieDamaged = false
   zombie.killReward = 5 + math.random(round.difficulty, math.ceil(round.difficulty*1.7))
   zombie.goldSpawn = 8
@@ -41,12 +49,14 @@ function spawnZombie()
   zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
   placeZombie(zombie, side)
   
+  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
   table.insert(zombies, zombie)
 end
 
 function spawnBigZombie()
   local side = math.random(1,4)
   local zombie = {}
+  zombie.isZombie = true
   zombie.x = 0
   zombie.y = 0
   zombie.vx = 0
@@ -64,6 +74,8 @@ function spawnBigZombie()
   zombie.damage = 25
   zombie.sprite = zomAssets.bigZombieSprite
   zombie.frame = zomAssets.bigZombieFrame
+  zombie.width = zombie.frame:getWidth()
+  zombie.height = zombie.frame:getHeight()
   zombie.dead = false
   zombie.zombieDamaged = false
   zombie.killReward = 60 + math.random(round.difficulty*2, round.difficulty*3)
@@ -76,12 +88,15 @@ function spawnBigZombie()
   
   zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
   placeZombie(zombie, side)
+  
+  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
   table.insert(zombies, zombie)
 end
 
 function spawnSmallZombie()
   local side = math.random(1,4)
   local zombie = {}
+  zombie.isZombie = true
   zombie.x = 0
   zombie.y = 0
   zombie.vx = 0
@@ -99,6 +114,8 @@ function spawnSmallZombie()
   zombie.damage = 10
   zombie.sprite = zomAssets.smallZombieSprite
   zombie.frame = zomAssets.smallZombieFrame
+  zombie.width = zombie.frame:getWidth()
+  zombie.height = zombie.frame:getHeight()
   zombie.dead = false
   zombie.zombieDamaged = false
   zombie.killReward = 30 + math.random(round.difficulty*2, round.difficulty*3)
@@ -111,6 +128,8 @@ function spawnSmallZombie()
   
   zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
   placeZombie(zombie, side)
+  
+  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
   table.insert(zombies, zombie)
 end
 
@@ -148,23 +167,6 @@ function zombieUpdate(dt)
           z.health = z.health + (z.healthBar.totalHealth+round.difficulty*4)/1250
         end
       end
-      
-      if distanceBetween(player.x, player.y, z.x, z.y) < z.hitRadius then
-        z.dead = true
-        if not player.isInvincible then
-          player.health = player.health - z.damage
-          shaders.damaged = true
-          cameraDamaged = true
-          shaderTimer:after(.15, function() shaders.damaged = false end)
-          camTimer:after(.15, function()
-            cameraDamaged = false
---            mag = 1
-          end)
-        else
-          spawnKillReward(z)
-        end
-        round.currentKilled = round.currentKilled + 1
-      end
     end
   end
   
@@ -172,6 +174,8 @@ function zombieUpdate(dt)
     local z = zombies[i]
     if z.dead == true then
       love.audio.play(soundFX.zombies.death)
+      
+      world:remove(z)
       table.remove(zombies, i)
     end
   end
@@ -197,53 +201,72 @@ function short_angle_dist(from, to)
   local difference = math.fmod(to - from, max_angle)
   return math.fmod(2 * difference, max_angle) - difference
 end
+
+local zombieFilter = function(item, other)
+  if other.isZombie then return nil
+  elseif other.isBullet then return 'cross'
+  elseif other.isGrenade then return 'bounce'
+  elseif other.isPlayer then return 'cross' end
+end
+
 function zombieMoveHandler(zom,dt)
-  --if distanceBetween(player.x, player.y, zom.x, zom.y) < 1500 then
-    zom.animation:update(dt)
-    
-    if zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) <= zom.activeDist then
-      zom.speed = zom.speed * (1 + dt)
-    elseif zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist*3 then
-      zom.speed = zom.speed * (2 + dt)
-    elseif zom.speed > zom.speedMin and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist then
-      zom.speed = zom.speed * (1 - dt)
+  zom.animation:update(dt)
+  
+  if zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) <= zom.activeDist then
+    zom.speed = zom.speed * (1 + dt)
+  elseif zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist*3 then
+    zom.speed = zom.speed * (2 + dt)
+  elseif zom.speed > zom.speedMin and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist then
+    zom.speed = zom.speed * (1 - dt)
+  end
+  
+  if zom.damage == 15 then
+    zom.rotSpeed = 19/zom.speed
+  end
+  if zom.damage == 25 then
+    zom.rotSpeed = 22/zom.speed
+  end
+  if zom.damage == 10 then
+    zom.rotSpeed = 34/zom.speed
+  end
+  
+  zom.vx = zom.vx + math.cos(zom.currentAngle)*zom.speed
+  zom.vy = zom.vy + math.sin(zom.currentAngle)*zom.speed
+  zom.vx = zom.vx * (1 - math.min(dt*zom.friction, .8))
+  zom.vy = zom.vy * (1 - math.min(dt*zom.friction, .8))
+  
+  --collision
+  local goalX = zom.x + zom.vx * dt
+  local goalY = zom.y + zom.vy * dt
+  local actualX, actualY, cols, length = world:move(zom, goalX - (zom.width/2 * .8), goalY - (zom.height/2 * .8), zombieFilter)
+  zom.x = actualX + (zom.width/2 * .8)
+  zom.y = actualY + (zom.height/2 * .8)
+  
+  for i=1,length do
+    local other = cols[i].other
+    if other.isBullet then
+      collideWithBullet(other, zom)
+    elseif other.isPlayer then
+      if zom.collideable then
+        collideWithZombie(zom)
+      end
     end
-    
-    if zom.damage == 15 then
-      zom.rotSpeed = 19/zom.speed
-    end
-    if zom.damage == 25 then
-      zom.rotSpeed = 22/zom.speed
-    end
-    if zom.damage == 10 then
-      zom.rotSpeed = 34/zom.speed
-    end
-    
-    zom.vx = zom.vx + math.cos(zom.currentAngle)*zom.speed
-    zom.vy = zom.vy + math.sin(zom.currentAngle)*zom.speed
-    zom.vx = zom.vx * (1 - math.min(dt*zom.friction, .8))
-    zom.vy = zom.vy * (1 - math.min(dt*zom.friction, .8))
-    
-    zom.x = zom.x + zom.vx * dt
-    zom.y = zom.y + zom.vy * dt
-    
-    if zom.x <= 6 then
-      zom.vx = zom.vx * -1
-      zom.x = zom.x + 2
-    end
-    if zom.y <= 6 then
-      zom.vy = zom.vy * -1
-      zom.y = zom.y + 2
-    end
-    if zom.x >= 1914 then
-      zom.vx = zom.vx * -1
-      zom.x = zom.x - 2
-    end
-    if zom.y >= 1074 then
-      zom.vy = zom.vy * -1
-      zom.y = zom.y - 2
-    end
-  --else
-    --zom.animation:gotoFrame(1)
-  --end
+  end
+  
+  if zom.x <= 6 then
+    zom.vx = zom.vx * -1
+    zom.x = zom.x + 2
+  end
+  if zom.y <= 6 then
+    zom.vy = zom.vy * -1
+    zom.y = zom.y + 2
+  end
+  if zom.x >= 1914 then
+    zom.vx = zom.vx * -1
+    zom.x = zom.x - 2
+  end
+  if zom.y >= 1074 then
+    zom.vy = zom.vy * -1
+    zom.y = zom.y - 2
+  end
 end

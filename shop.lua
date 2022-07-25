@@ -10,7 +10,8 @@ shop.x = 0
 shop.y = 0
 shop.skills = {}
 shop.skills.price = 10
-shop.skills.damage = 10
+shop.skills.grenades = 10
+shop.skills.damage = 6
 shop.skills.damPurch = 0
 shop.skills.speedPurch = 0
 shop.skills.ratePurch = 0
@@ -18,11 +19,10 @@ shop.skills.magPurch = 0
 shop.skills.ammoPurch = 0
 shop.skills.pierce = 0
 shop.skills.defense = 0
-shop.skills.maxAmmo = 10
+shop.skills.maxAmmo = 6
 shop.skills.reload = 2.5
 shop.skills.speed = 0
 shop.skills.bulletSpeed = 0
-shop.skills.fireRate = 1
 shop.skills.magnet = 1
 shop.rate = 1
 
@@ -46,7 +46,6 @@ skills = {
   end,
   function()
     if gold.total >= shop.skills.price then
-      shop.skills.fireRate = shop.skills.fireRate * .98
       shop.skills.reload = shop.skills.reload * .98
       updateTweens()
       shop.skills.ratePurch = shop.skills.ratePurch + 1
@@ -55,7 +54,7 @@ skills = {
   end,
   function()
     if gold.total >= shop.skills.price then
-      shop.skills.magnet = shop.skills.magnet * 1.1
+      shop.skills.magnet = shop.skills.magnet * 1.05
       shop.skills.magPurch = shop.skills.magPurch + 1
       purchase()
     end
@@ -128,7 +127,7 @@ function purchase()
   end
   love.audio.play(soundFX.makePurchase)
   gold.total = gold.total - shop.skills.price
-  shop.skills.price = shop.skills.price + 1
+  shop.skills.price = shop.skills.price + 2
   shop.skills.healthPrice = shop.skills.price
 end
 
@@ -168,7 +167,8 @@ end
 
 function resetShop()
   shop.skills.price = 10
-  shop.skills.damage = 10
+  shop.skills.grenades = 10
+  shop.skills.damage = 6
   shop.skills.damPurch = 0
   shop.skills.speedPurch = 0
   shop.skills.ratePurch = 0
@@ -176,11 +176,10 @@ function resetShop()
   shop.skills.ammoPurch = 0
   shop.skills.pierce = 0
   shop.skills.defense = 0
-  shop.skills.maxAmmo = 10
+  shop.skills.maxAmmo = 6
   shop.skills.reload = 2.5
   shop.skills.speed = 0
   shop.skills.bulletSpeed = 0
-  shop.skills.fireRate = 1
   shop.skills.magnet = 1
   shop.rate = 1
 end

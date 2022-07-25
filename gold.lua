@@ -9,6 +9,10 @@ blackSprite = love.graphics.newImage('sprites/coins/coinBlack.png')
 azureSprite = love.graphics.newImage('sprites/coins/coinAzure.png')
 rubySprite = love.graphics.newImage('sprites/coins/coinRuby.png')
 
+coinAlpha = { alpha = 1 }
+targetCoinAlpha = { alpha = 0 }
+coinTween = tween.new(.5, coinAlpha, targetCoinAlpha)
+local flag = true
 
 function updateGold(dt)
   if round.gameState == 2 then
@@ -29,9 +33,30 @@ function updateGold(dt)
         table.remove(coins, i)
       end
     end
+    
+    if round.isDespawning then
+      if coinAlpha.alpha <= 1 and flag then
+        coinTween:update(dt)
+        if coinAlpha.alpha == 0 then flag = false end
+      end
+      if coinAlpha.alpha >= 0 and not flag then
+        coinTween:update(-dt)
+        if coinAlpha.alpha == 1 then flag = true end
+      end
+      
+    elseif not round.isDespawning and coinAlpha.alpha ~= 1 then coinAlpha.alpha = 1 end
+    
   elseif round.gameState == 1 then
     coins = {}
   end
+end
+
+function drawCoins()
+  love.graphics.setColor(1,1,1,coinAlpha.alpha)
+  for i,c in ipairs(coins) do
+    love.graphics.draw(c.sprite, c.x, c.y, nil, nil, nil, 2, 2)
+  end
+  love.graphics.setColor(1,1,1,1)
 end
 
 function spawnRuby(obj)

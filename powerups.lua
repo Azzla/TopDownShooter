@@ -15,6 +15,11 @@ speedUpMult = 1.5
 
 powerupTimer = globalTimer.new()
 
+powerupAlpha = { alpha = 1 }
+targetPowerupAlpha = { alpha = 0 }
+powerupTween = tween.new(.5, powerupAlpha, targetPowerupAlpha)
+local flag = true
+
 function spawnPowerup(index, zombie)
   local powerup = {}
   powerup.x = zombie.x
@@ -88,6 +93,16 @@ function activatePowerup(powerup)
   end
 end
 
+function drawPowerups()
+  for i,p in ipairs(powerupsActive) do
+    if p.isVisible == true then
+      love.graphics.setColor(1,1,1,powerupAlpha.alpha)
+      love.graphics.draw(p.sprite, p.x, p.y, nil, nil, nil, 8, 8)
+      love.graphics.setColor(1,1,1,1)
+    end
+  end
+end
+
 function powerupUpdate(dt)
   if round.gameState == 2 then
     for i,pow in ipairs(powerupsActive) do
@@ -108,7 +123,7 @@ function powerupUpdate(dt)
     for i=#powerupsActive,1,-1 do
       local p = powerupsActive[i]
       
-      if p.dead == true then
+      if p.dead then
         if p.id == 2 then
           player.damageUp = false
         elseif p.id == 3 then
@@ -121,5 +136,16 @@ function powerupUpdate(dt)
       end
     end
     
+    if round.isDespawning then
+      if powerupAlpha.alpha <= 1 and flag then
+        powerupTween:update(dt)
+        if powerupAlpha.alpha == 0 then flag = false end
+      end
+      if powerupAlpha.alpha >= 0 and not flag then
+        powerupTween:update(-dt)
+        if powerupAlpha.alpha == 1 then flag = true end
+      end
+      
+    elseif not round.isDespawning and powerupAlpha.alpha ~= 1 then powerupAlpha.alpha = 1 end
   end
 end

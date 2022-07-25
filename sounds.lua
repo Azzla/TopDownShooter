@@ -1,4 +1,7 @@
 soundFX = {}
+annihilatePlayed = false
+soundFXTimer = globalTimer.new()
+musicStarted = false
 
 function loadSoundFX()
   soundFX.lazer = love.audio.newSource('sounds/lazer2.mp3', 'static')
@@ -10,9 +13,18 @@ function loadSoundFX()
   soundFX.dash = love.audio.newSource('sounds/dash.mp3','static')
   soundFX.wind = love.audio.newSource('sounds/wind.mp3', 'stream')
   soundFX.music = love.audio.newSource('sounds/gameMusic2.mp3', 'stream')
-  soundFX.powerup = love.audio.newSource('sounds/powerup.mp3', 'stream')
-  soundFX.health = love.audio.newSource('sounds/health.mp3', 'stream')
-  soundFX.invincible = love.audio.newSource('sounds/invincible.mp3', 'stream')
+  soundFX.musicBoss = love.audio.newSource('sounds/gameMusicBoss.mp3', 'stream')
+  soundFX.powerup = love.audio.newSource('sounds/powerup.mp3', 'static')
+  soundFX.health = love.audio.newSource('sounds/health.mp3', 'static')
+  soundFX.invincible = love.audio.newSource('sounds/invincible.mp3', 'static')
+  soundFX.explosion = love.audio.newSource('sounds/explosion.mp3', 'static')
+  soundFX.annihilate = love.audio.newSource('sounds/annihiliate.mp3', 'static')
+  
+  soundFX.cockPistol = love.audio.newSource('sounds/cockPistol.mp3', 'static')
+  soundFX.sniper = love.audio.newSource('sounds/sniper.mp3', 'static')
+  soundFX.shotgun = love.audio.newSource('sounds/shotgun.mp3', 'static')
+  soundFX.pumpAction = love.audio.newSource('sounds/pumpAction.mp3', 'static')
+  soundFX.zoom = love.audio.newSource('sounds/zoom.mp3', 'static')
   
   soundFX.collectCoin = {}
   soundFX.collectCoin.m1 = love.audio.newSource('sounds/collectCoin.mp3', 'static')
@@ -26,9 +38,16 @@ function loadSoundFX()
   
   soundFX.volumeControl = 3
   
+  soundFX.cockPistol:setVolume(.4)
+  soundFX.sniper:setVolume(.3)
+  soundFX.shotgun:setVolume(.1)
+  soundFX.pumpAction:setVolume(.1)
+  soundFX.zoom:setVolume(.2)
+  
   soundFX.lazer:setVolume(.3)
   soundFX.lazer2:setVolume(.2)
-  soundFX.reload:setVolume(.2)
+  soundFX.reload:setVolume(.3)
+  soundFX.explosion:setVolume(.12)
   soundFX.move:setVolume(.4)
   soundFX.dash:setVolume(.4)
   soundFX.zombies.death:setVolume(.6)
@@ -37,9 +56,11 @@ function loadSoundFX()
   soundFX.roundStart:setVolume(.7)
   soundFX.wind:setVolume(0)
   soundFX.music:setVolume(.35)
+  soundFX.musicBoss:setVolume(.6)
   soundFX.powerup:setVolume(.5)
   soundFX.health:setVolume(.33)
   soundFX.invincible:setVolume(.3)
+  soundFX.annihilate:setVolume(.2)
   
   soundFX.collectCoin.m1:setVolume(1)
   soundFX.collectCoin.m2:setVolume(.2)
@@ -48,19 +69,49 @@ function loadSoundFX()
   soundFX.collectCoin.m5:setVolume(.5)
 end
 
+function playMusic()
+  if soundFX.music:isPlaying() then
+    love.audio.pause(soundFX.music)
+    love.audio.play(soundFX.musicBoss)
+  else
+    love.audio.play(soundFX.musicBoss)
+  end
+end
+
 function gameMusic(dt)
   if round.gameState == 2 then
-    if soundFX.music:isPlaying() == false then
-      love.audio.play(soundFX.music)
+    soundFXTimer:update(dt)
+    if not annihilatePlayed then
+      love.audio.play(soundFX.annihilate)
+      annihilatePlayed = true
     end
+    if round.difficulty ~= 0 and round.difficulty % 5 >= 0 then
+      if not musicStarted then
+        soundFXTimer:after(1.6, function()
+          playMusic()
+          musicStarted = true
+        end)
+      else
+        playMusic()
+      end
+    else
+      if soundFX.music:isPlaying() == false then
+        love.audio.pause(soundFX.musicBoss)
+        love.audio.play(soundFX.music)
+      end
+    end
+    
     if soundFX.music:getVolume() ~= .35 then soundFX.music:setVolume(.35) end
+    if soundFX.musicBoss:getVolume() ~= .6 then soundFX.musicBoss:setVolume(.6) end
   end
   
   if round.gameState == 3 then
     if soundFX.music:getVolume() ~= .1 then soundFX.music:setVolume(.1) end
+    if soundFX.musicBoss:getVolume() ~= .1 then soundFX.musicBoss:setVolume(.1) end
   end
   
   if round.gameState == 5 then
     if soundFX.music:getVolume() ~= 0 then soundFX.music:setVolume(0) end
+    if soundFX.musicBoss:getVolume() ~= 0 then soundFX.musicBoss:setVolume(0) end
   end
 end

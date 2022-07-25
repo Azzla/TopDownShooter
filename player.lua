@@ -4,14 +4,17 @@ player = {}
 player.isInvincible = false
 player.damageUp = false
 
+player.isPlayer = true
+player.sprite = love.graphics.newImage('sprites/robotWalk.png')
+player.frame = love.graphics.newImage('sprites/Robot.png')
 player.x = map_width / 2
 player.vx = 0
 player.y = map_height / 2
 player.vy = 0
-player.v = 370
+player.w = player.frame:getWidth()
+player.h = player.frame:getHeight()
+player.v = 350
 player.friction = 6
-player.sprite = love.graphics.newImage('sprites/robotWalk.png')
-player.frame = love.graphics.newImage('sprites/Robot.png')
 player.grid = anim8.newGrid(16, 16, 128, 16)
 player.animation = anim8.newAnimation(player.grid("1-8",1), 0.08)
 player.health = 100
@@ -26,6 +29,8 @@ player.melee.damage = 20
 player.p = spawnBulletParticleSystem(player.x, player.y)
 player.dashP = spawnDashParticleSystem(player.x, player.y)
 player.isRecharge = true
+
+world:add(player, player.x - (player.w/2 * .8), player.y - (player.h/2 * .8), player.w * .8, player.h * .8)
 
 function spawnPlayerHealthBar()
   player.healthBar = {}
@@ -54,6 +59,12 @@ function walkAnimation(dt)
     end
   elseif round.gameState == 3 then
     love.audio.pause(soundFX.move)
+  end
+end
+
+local playerFilter = function(item, other)
+  if other.isBullet then return nil
+  elseif other.isZombie then return 'cross'
   end
 end
 
@@ -90,8 +101,20 @@ function movementHandle(dt)
   
   player.vx = player.vx * (1 - math.min(dt*player.friction, .5))
   player.vy = player.vy * (1 - math.min(dt*player.friction, .5))
-  player.x = player.x + player.vx * dt
-  player.y = player.y + player.vy * dt
+  
+  --Collisions--
+  local goalX = player.x + player.vx * dt
+  local goalY = player.y + player.vy * dt
+  local actualX, actualY, cols, length = world:move(player, goalX - (player.w/2 * .8), goalY - (player.h/2 * .8), playerFilter)
+  player.x = actualX + (player.w/2 * .8)
+  player.y = actualY + (player.h/2 * .8)
+  
+  for i=1,length do
+    local other = cols[i].other
+    if other.isZombie then
+      collideWithZombie(other)
+    end
+  end
 end
 
 dashTimer = globalTimer.new()
@@ -99,6 +122,20 @@ dashTimer:every(2.7, function()
   player.canDash = true
   player.isRecharge = true
 end)
+
+function collideWithZombie(zom)
+  zom.dead = true
+  zom.collideable = false
+  if not player.isInvincible then
+    player.health = player.health - zom.damage
+    screenShake(.15, 1)
+    shaders.damaged = true
+    shaderTimer:after(.15, function() shaders.damaged = false end)
+  else
+    spawnKillReward(zom)
+  end
+  round.currentKilled = round.currentKilled + 1
+end
 
 function addPurchasedHealth()
   player.health = player.health + 25

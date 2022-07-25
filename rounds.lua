@@ -5,19 +5,22 @@ round.gameState = 4
 round.time = 1
 round.next = false
 round.zombiesSpawned = 0
-round.zombiesMaxSpawn = 5
+round.zombiesMaxSpawn = 10
 round.totalKilled = 0
 round.currentKilled = 0
-round.shotTimer = round.shotMaxTimer or .4
-round.shotMaxTimer = .4
 round.uiBox = love.graphics.newImage('sprites/UIBox1.png')
 round.uiBox2 = love.graphics.newImage('sprites/UIBox2.png')
 round.uiBox3 = love.graphics.newImage('sprites/UIBox3.png')
 round.bulletCount = 0
+round.isDespawning = false
 
 roundTimer = globalTimer.new()
 
-roundTimer:every(round.time, function() zombieSpawning() end)
+roundTimer:every(round.time, function()
+  if not round.isDespawning then
+    zombieSpawning()
+  end
+end)
 
 function updateRounds(dt)
   if round.gameState == 2 then
@@ -25,32 +28,46 @@ function updateRounds(dt)
       round.zombiesSpawned = 0
       round.currentKilled = 0
       round.bulletCount = 0
-      round.difficulty = round.difficulty + 1
+      
+      --remove lingering drops
+      round.isDespawning = true
+      roundTimer:after(6, function()
+        round.isDespawning = false
+        round.difficulty = round.difficulty + 1
+        love.audio.play(soundFX.roundStart)
+        round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
+        
+        for i=#coins,1,-1 do
+          local c = coins[i]
+          c.collected = true
+        end
+        for i=#powerupsActive,1,-1 do
+          local p = powerupsActive[i]
+          p.dead = true
+        end
+      end)
       
       if round.difficulty >= 10 and round.time ~= 9/round.difficulty then
         round.time = 10/round.difficulty
       end
-      
-      love.audio.play(soundFX.roundStart)
-      round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
     end
   end
   
-  for i,h in ipairs(healthbars) do
-    if h.isPlayer == true and h.health <= 0 then
-      round.gameState = 1
-      h.health = player.health
-      resetRounds()
-      resetShop()
-      round.gameState = 2
-    end
-    if h.health > player.health then
-      h.health = player.health
-    end
-  end
+--  for i,h in ipairs(healthbars) do
+--    if h.isPlayer == true and h.health <= 0 then
+--      round.gameState = 1
+--      h.health = player.health
+--      resetRounds()
+--      resetShop()
+--      round.gameState = 2
+--    end
+--    if h.health > player.health then
+--      h.health = player.health
+--    end
+--  end
 end
 
-function love.keypressed(key, scancode, isrepeat)
+table.insert(KEYPRESSED, function(key, scancode)
   if key == "p" then
     if round.gameState == 1 then
       player.health = 100
@@ -96,6 +113,7 @@ function love.keypressed(key, scancode, isrepeat)
     if round.gameState == 2 then
       for i=#zombies,1,-1 do
         local z = zombies[i]
+        world:remove(z)
         table.remove(zombies, i)
       end
       round.zombiesSpawned = 0
@@ -132,25 +150,45 @@ function love.keypressed(key, scancode, isrepeat)
   if round.gameState == 2 and canReload and key == 'r' then
     reload()
   end
-end
+end)
 
 function resetRounds()
   if #zombies > 0 then
     for i=#zombies,1,-1 do
       local z = zombies[i]
+      world:remove(z)
       table.remove(zombies, i)
+    end
+  end
+  if #bullets > 0 then
+    for i=#bullets,1,-1 do
+      local b = bullets[i]
+      world:remove(b)
+      table.remove(bullets, i)
+    end
+  end
+  
+  guns.pistol.currAmmo = guns.pistol.clipSize
+  guns.sniper.currAmmo = guns.sniper.clipSize
+  guns.shotgun.currAmmo = guns.shotgun.clipSize
+  guns.equipped = guns.pistol
+  
+  local items, length = world:getItems()
+  for i,item in pairs(items) do
+    if item.isZombie or item.isBullet or item.isGrenade then
+      world:remove(item)
     end
   end
 
   gold.total = 0
   round.difficulty = 1
-  round.time = 3
+  round.time = 1
   round.zombiesSpawned = 0
   round.zombiesMaxSpawn = 5
   round.totalKilled = 0
   round.currentKilled = 0
-  round.shotTimer = .1
-  round.firstShotTaken = false
+  round.isDespawning = false
+  round.bulletCount = 0
 end
   
 function zombieSpawning()

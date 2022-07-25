@@ -15,7 +15,7 @@ target2.width = 15
 target2.height = 1
 
 dashTween = tween.new(2.7, energy, target2)
-reloadTween = tween.new(shop.skills.reload, reloader, target)
+reloadTween = tween.new(guns.equipped.reload, reloader, target)
 
 function energyUpdate(dt)
   if round.gameState == 2 and energy.width ~= target.width then
@@ -43,5 +43,6 @@ end
 
 function updateTweens()
   reloader.width = 0
-  reloadTween = tween.new(shop.skills.reload, reloader, target)
+  reloadTween = tween.new(guns.equipped.reload, reloader, target)
+  reloadTween:set(99)
 end

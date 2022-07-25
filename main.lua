@@ -1,18 +1,22 @@
 function love.load()
+  KEYPRESSED={}
+  
   love.graphics.setDefaultFilter("nearest", "nearest")
   
   love.window.setMode(0, 0)
---  love.window.setMode(1920, 1080)
+  --love.window.setMode(1920, 1080)
   screen_width = love.graphics.getWidth()
   screen_height = love.graphics.getHeight()
-  zoom_factor = 5.5
-  if screen_height >= 1440 then zoom_factor = 6 end
+  zoom_factor = 6
+--  if screen_height >= 1440 then zoom_factor = 6 end
   love.window.setFullscreen(true, "desktop")
   
+  --font
   pixelFont = love.graphics.newFont('sprites/Minecraft.ttf', 16)
   love.graphics.setFont(pixelFont)
   pixelFont:setFilter( "nearest", "nearest" )
   
+  --map
   sti = require('SimpleTI/sti')
   mainMap = sti('sprites/mainMapV2.lua')
   map_width = mainMap.width * mainMap.tilewidth
@@ -22,15 +26,27 @@ function love.load()
   globalTimer = require('hump-master/timer')
   tween = require('tween-master/tween')
   anim8 = require('anim8-master/anim8')
+  
+  Class = require('floating-text-master/class')
+  require('floating-text-master/effects/PopupText')
+  require('floating-text-master/effects/PopupTextManager')
+  gPopupManager = PopupTextManager()
+  
+  bump = require('bump-master/bump')
+  --collision world
+  world = bump.newWorld(32)
+  
   require('shaders')
   require('sounds')
   loadSoundFX()
   require('menu')
   require('prompts')
   require('particles')
+  require('guns')
   require('player')
   require('zombie')
   require('bullets')
+  require('grenades')
   require('healthbar')
   require('rounds')
   require('shop')
@@ -54,6 +70,7 @@ function love.update(dt)
     globalTimer.update(dt)
   end
   if round.gameState == 2 then
+    gPopupManager:update(dt)
     updatePromptAlpha(dt)
     updateShaderTimers(dt)
     updateCameraTimers(dt)
@@ -62,8 +79,7 @@ function love.update(dt)
     walkAnimation(dt)
     zombieUpdate(dt)
     bulletUpdate(dt)
-    rocketUpdate(dt)
-    explosionUpdate(dt)
+    grenadeUpdate(dt)
     updateRounds(dt)
     updateGold(dt)
     energyUpdate(dt)
@@ -71,7 +87,6 @@ function love.update(dt)
     powerupUpdate(dt)
     roundTimer:update(dt)
     mainMap:update(dt)
-    autoShoot(dt)
     if player.canDash == false then
       dashTimer:update(dt)
     end
@@ -85,6 +100,7 @@ function love.draw()
     helpScreen()
   elseif round.gameState == 2 then
     resetShopButtons()
+    cam:zoomTo(currentZoom.zoom)
     cam:attach()
     
     --nighttime shader
@@ -92,12 +108,7 @@ function love.draw()
     mainMap:drawLayer(mainMap.layers["Background"])
     love.graphics.setShader()
     
-    --useful camera-translated coordinates
-    origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / zoom_factor)
-    originRight = origin + (screen_width / zoom_factor)
-    originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
-    
+    drawGuns()
     if shaders.damaged then love.graphics.setShader(damagedShader) end
     if player.isInvincible then
       drawInvincibilityShader()
@@ -108,11 +119,21 @@ function love.draw()
     love.graphics.setShader()
     
     if round.difficulty >= 20 then drawNightShader() end
+    
+    --Particles
     love.graphics.draw(player.p.pSystem, player.x, player.y, nil, 1, 1)
     love.graphics.draw(player.dashP.pSystem, player.x, player.y, nil, 1, 1)
     
     -- Draw all objects
     drawEverything()
+    gPopupManager:render()
+    collisionDebug()
+    
+    --Energy
+    drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
+    
+    ret1,ret2 = cam:mousePosition()
+    love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
     
     love.graphics.setShader()
 --    if currentPrompt == nil then
@@ -120,19 +141,26 @@ function love.draw()
 --    end
 --    drawPrompt(currentPrompt, origin + 130, origin2 + 40, prompts.alpha.alpha)
     
+    cam:detach()
+    cam:zoomTo(6)
+    
+    --useful camera-translated coordinates
+    origin,origin2 = cam:worldCoords(0,0)
+    origin2Bot = origin2 + (screen_height / 6)
+    originRight = origin + (screen_width / 6)
+    originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
+    
+    cam:attach()
     --Health
     love.graphics.draw(round.uiBox3, origin, origin2Bot - 12)
     player.healthBar.animation:draw(player.healthBar.sprite, origin - 1, origin2Bot - 14, nil, 5, 5)
     love.graphics.draw(player.heartIcon, origin + 4, origin2Bot - 12, nil, nil, nil, 4)
     
     --Reload
-    love.graphics.printf(currentAmmo .. "/" .. shop.skills.maxAmmo, origin - 24, origin2Bot - 34, 100, "right", nil, .8, .8)
+    love.graphics.printf(guns.equipped.currAmmo .. "/" .. guns.equipped.clipSize, origin - 24, origin2Bot - 34, 100, "right", nil, .8, .8)
     love.graphics.draw(round.uiBox2, origin + 2, origin2Bot - 22)
     drawReload(origin + 4, origin2Bot - 19, reloader.width, reloader.height)
     love.graphics.draw(player.ammoIcon, origin + 7, origin2Bot - 23, nil, nil, nil, 6)
-    
-    --Energy
-    drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
     
     --Gold
     love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
@@ -144,12 +172,11 @@ function love.draw()
     love.graphics.draw(round.uiBox, origin + 2, origin2 + 37)
     love.graphics.printf(round.difficulty, origin + 28, origin2 + 40, 100, "left", nil, .6, .6)
     
-    ret1,ret2 = cam:mousePosition()
-    love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
-    
     cam:detach()
+    cam:zoomTo(currentZoom.zoom)
   elseif round.gameState == 3 then
     --shop
+    cam:zoomTo(6)
     cam:attach()
     ret1,ret2 = cam:mousePosition()
     --useful camera-translated coordinates
@@ -187,6 +214,7 @@ function love.draw()
     displayShop()
     
     cam:detach()
+    cam:zoomTo(currentZoom.zoom)
   elseif round.gameState == 5 then
     -- Pause screen
     cam:attach()
@@ -210,48 +238,50 @@ function love.draw()
   end
 end
 
+function love.keypressed(key, unicode)
+  for _,fn in ipairs(KEYPRESSED) do
+    fn(key, unicode)
+  end
+end
+
 function drawEverything()
   for i,z in ipairs(zombies) do
       love.graphics.draw(z.p.pSystem, z.x, z.y, nil, 3, 3)
       if z.damage == 10 then
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1.2, 1.2, 5, z.frame:getHeight()/2)
+        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
         if z.healthBar.isHidden == false then
           z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 6, -5)
         end
       elseif z.damage == 25 then
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1.2, 1.2, z.frame:getWidth()/2, z.frame:getHeight()/2)
+        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
         if z.healthBar.isHidden == false then
           z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, 1.5, 1.5, 6, 8)
         end
       else
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1.2, 1.2, z.frame:getWidth()/2, z.frame:getHeight()/2)
+        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, zomAssets.zombieWidth/2, 1 + zomAssets.zombieHeight/2)
         if z.healthBar.isHidden == false then
           z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 7, 2)
         end
       end
     end
     
-    for i,e in ipairs(explosions) do
-      e.animation:draw(e.sprite, e.x, e.y)
-    end
-    
     for i,b in ipairs(bullets) do
-      love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1.2, 1.2, 3, 3)
+      love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.offsX, b.offsY)
     end
     
-    for i,r in ipairs(rockets) do
-      love.graphics.draw(r.sprite, r.x, r.y, r.direction, 1, 1, 3, 3)
-    end
-    
-    for i,c in ipairs(coins) do
-      love.graphics.draw(c.sprite, c.x, c.y, nil, nil, nil, 2, 2)
-    end
-    
-    for i,p in ipairs(powerupsActive) do
-      if p.isVisible == true then
-        love.graphics.draw(p.sprite, p.x, p.y, nil, nil, nil, 8, 8)
-      end
-    end
+    drawCoins()
+    drawPowerups()
+    drawGrenades()
+end
+
+function collisionDebug()
+  local items, length = world:getItems()
+  love.graphics.setColor(1,0,0,1)
+  for i, item in pairs(items) do
+    local x,y,w,h = world:getRect(item)
+    love.graphics.rectangle('line', x,y,w,h)
+  end
+  love.graphics.setColor(1,1,1,1)
 end
 
 function loadingScreen(s)
@@ -271,6 +301,12 @@ end
 function zombie_angle(enemy)
   local a,b = cam:cameraCoords(enemy.x, enemy.y)
   local c,d = cam:cameraCoords(player.x, player.y)
+  return math.atan2(d - b, c - a) + math.pi/2
+end
+
+function grenade_angle(g, z)
+  local a,b = cam:cameraCoords(g.x, g.y)
+  local c,d = cam:cameraCoords(z.x, z.y)
   return math.atan2(d - b, c - a) + math.pi/2
 end
 
