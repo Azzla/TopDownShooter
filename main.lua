@@ -2,7 +2,7 @@ function love.load()
   love.graphics.setDefaultFilter("nearest", "nearest")
   
   love.window.setMode(0, 0)
-  --love.window.setMode(1920, 1080)
+--  love.window.setMode(1920, 1080)
   screen_width = love.graphics.getWidth()
   screen_height = love.graphics.getHeight()
   love.window.setFullscreen(true, "desktop")
@@ -223,6 +223,11 @@ function love.draw()
     love.graphics.setShader()
     
     love.graphics.printf("PAUSED", originXCenter - 130, originYCenter - 10, 999, "left", nil, 4, 4)
+    
+    
+    
+    ret1,ret2 = cam:mousePosition()
+    love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
     
     cam:detach()
   elseif round.gameState == 1 then

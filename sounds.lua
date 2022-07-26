@@ -63,10 +63,10 @@ function loadSoundFX()
   soundFX.annihilate:setVolume(.2)
   
   soundFX.collectCoin.m1:setVolume(1)
-  soundFX.collectCoin.m2:setVolume(.2)
-  soundFX.collectCoin.m3:setVolume(.3)
-  soundFX.collectCoin.m4:setVolume(.4)
-  soundFX.collectCoin.m5:setVolume(.5)
+  soundFX.collectCoin.m2:setVolume(.3)
+  soundFX.collectCoin.m3:setVolume(.5)
+  soundFX.collectCoin.m4:setVolume(.7)
+  soundFX.collectCoin.m5:setVolume(1)
 end
 
 function playMusic()

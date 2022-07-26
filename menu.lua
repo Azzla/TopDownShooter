@@ -93,6 +93,9 @@ function drawMenuButtons()
     end
     --check for click
     if love.mouse.isDown(1) and not oldmousedown and isHot then
+      if not soundFX.collectCoin.m1:isPlaying() then love.audio.play(soundFX.collectCoin.m1) else
+        love.audio.play(soundFX.collectCoin.m5)
+      end
       button.fn()
     end
   end
