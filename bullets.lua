@@ -1,25 +1,48 @@
+local TextManager = require('textManager')
+
 bullets = {}
 
-rocketSprite = love.graphics.newImage('sprites/rocket.png')
 reloadTimer = globalTimer.new()
 cooldownTimer = globalTimer.new()
-explosionTimer = globalTimer.new()
+
 canReload = true
 canShoot = true
 coolingDown = false
 
-function spawnBullet(damageUp, dir)
+function autoShoot(dt)
+  if guns.equipped == guns.uzi then
+    if guns.equipped.currAmmo > 0 then
+      if love.mouse.isDown(1) and canShoot and not coolingDown then
+        coolingDown = true
+        cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
+        
+        processGunSounds()
+        guns.equipped.currAmmo = guns.equipped.currAmmo - 1
+        round.bulletCount = round.bulletCount + 1
+        --magical magics
+        local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
+        local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
+        local handOffsetX  = handDistance * math.cos(handAngle)
+        local handOffsetY  = handDistance * math.sin(handAngle)
+        --magical magics
+        spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
+      end
+    else reload() end
+  end
+end
+
+function spawnBullet(damageUp, dir, offsX, offsY)
   local bullet = {}
   
   bullet.isBullet = true
-  bullet.x = player.x
-  bullet.y = player.y
-  bullet.offsX = guns.equipped.bulletOffsX
-  bullet.offsY = guns.equipped.bulletOffsY
+  bullet.x = player.x + offsX
+  bullet.y = player.y + offsY
   bullet.id = round.bulletCount/1000
   bullet.direction = dir
   bullet.sprite = guns.equipped.bulletSprite
   bullet.frame = bullet.sprite
+  bullet.origX = bullet.sprite:getWidth()
+  bullet.origY = bullet.sprite:getHeight()/2
   bullet.damage = guns.equipped.dmg
   bullet.speed = guns.equipped.v
   bullet.pierce = guns.equipped.pierce
@@ -35,7 +58,7 @@ function spawnBullet(damageUp, dir)
   end
   
   spawnBulletParticles(player.p.pSystem, math.random(6,12))
-  world:add(bullet, bullet.x - 1, bullet.y - 1, 2, 2)
+  world:add(bullet, bullet.x, bullet.y, 2, 2)
   table.insert(bullets, bullet)
 end
 
@@ -55,23 +78,6 @@ function reload()
   end
 end
 
-function spawnExplosion(x,y)
-  local explosion = {}
-  explosion.x = x
-  explosion.y = y
-  explosion.sprite = love.graphics.newImage('sprites/explosion.png')
-  explosion.grid = anim8.newGrid(16, 16, 128, 16)
-  explosion.animation = anim8.newAnimation(explosion.grid("1-8",1), 0.01, explosion.onLoop)
-  explosion.dead = false
-  explosion.onLoop = function(anim, loops)
-    anim:destroy()
-    explosion.dead = true
-  end
-
-
-  table.insert(explosions, explosion)
-end
-
 local bulletFilter = function(item, other)
   if other.isBullet then return nil end
 end
@@ -82,15 +88,13 @@ function bulletUpdate(dt)
   gunTimer:update(dt)
   
   if round.gameState == 2 then
-    
     for i,b in ipairs(bullets) do
       if b.timer ~= nil then b.timer:update(dt) end
---      local offsetX, offsetY = bulletAnchorPoints(b.offsX, b.offsY)
       
       local goalX = b.x + math.cos(b.direction - math.pi/2) * b.speed * dt
       local goalY = b.y + math.sin(b.direction - math.pi/2) * b.speed * dt
-      local actualX, actualY, cols, length = world:move(b, goalX - 1, goalY - 1, bulletFilter)
-      b.x, b.y = actualX + 1, actualY + 1
+      local actualX, actualY, cols, length = world:move(b, goalX, goalY, bulletFilter)
+      b.x, b.y = actualX, actualY
     end
 
     for i=#bullets,1,-1 do
@@ -113,45 +117,65 @@ end
 
 function collideWithBullet(b, z)
   if b.id ~= z.id then
-    gPopupManager:addPopup(
-    {
-        text = tostring(b.damage),
-        font = pixelFont,
-        color = {r = .5, g = .5, b = 1, a = 1},
-        x = z.x + math.random(-10,10),
-        y = z.y,
-        scaleX = .3 + b.damage/75,
-        scaleY = .3 + b.damage/75,
-        blendMode = 'add',
-        fadeOut = {start = .5, finish = .7},
-        dX = math.random(-5,5),
-        dY = -20,
-        duration = .7
-    })
-    
+    TextManager.bulletDmgPopup(b, z)
     spawnBloodParticles(z.p.pSystem, math.random(12,24), b.direction)
+    
     z.zombieDamaged = true
     shaderTimer:after(.15, function() z.zombieDamaged = false end)
+    
     z.health = z.health - b.damage
     z.id = b.id
-    if soundFX.zombies.hit:isPlaying() == true then
-      love.audio.stop(soundFX.zombies.hit)
-    end
+    
+    if soundFX.zombies.hit:isPlaying() == true then love.audio.stop(soundFX.zombies.hit) end
     love.audio.play(soundFX.zombies.hit)
 
     if z.health <= 0 then
+      z.collideable = false
       z.dead = true
+      local deathP = spawnDeathParticleSystem(z.x, z.y)
+      spawnBloodParticles(deathP.pSystem, math.random(24,36), b.direction)
+      
       round.totalKilled = round.totalKilled + 1
       round.currentKilled = round.currentKilled + 1
       spawnKillReward(z)
       powerupChance(z)
     end
 
-    if b.pierce == 0 then
-      b.dead = true
+    if b.pierce == 0 then b.dead = true
     else
       b.pierce = b.pierce - 1
+      b.damage = b.damage - 7
     end
+  end
+end
+
+function fireBullets()
+  --magical magics
+  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
+  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
+  local handOffsetX  = handDistance * math.cos(handAngle)
+  local handOffsetY  = handDistance * math.sin(handAngle)
+  --magical magics
+  
+  if guns.equipped == guns['shotgun'] then
+    local bullets = guns.equipped.bullets
+    local direction = player_angle() - math.pi/32
+    local increment = guns.equipped.spread() / bullets
+    
+    for i=1,bullets do
+      spawnBullet(player.damageUp, direction, handOffsetX, handOffsetY)
+      round.bulletCount = round.bulletCount + 1
+      direction = direction + increment
+      increment = guns.equipped.spread() / bullets
+    end
+    
+  elseif guns.equipped == guns['pistol'] then
+    spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
+    round.bulletCount = round.bulletCount + 1
+    
+  elseif guns.equipped == guns['sniper'] then
+    spawnBullet(player.damageUp, player_angle(), handOffsetX, handOffsetY)
+    round.bulletCount = round.bulletCount + 1
   end
 end
 
@@ -159,35 +183,17 @@ function love.mousereleased(x, y, button)
   if round.gameState == 2 then
     if button == 1 then
       if guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
+        --check for cooldown
         if guns.equipped.cooldown > 0 then
           coolingDown = true
           cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
         end
         
         processGunSounds()
-        
-        guns.equipped.currAmmo = guns.equipped.currAmmo - 1
-        
-        if guns.equipped == guns['shotgun'] then
-          local bullets = 6
-          local direction = player_angle() - math.pi/32
-          local increment = math.pi/(math.random(12,18)) / bullets
-          
-          for i=1,bullets do
-            spawnBullet(player.damageUp, direction)
-            round.bulletCount = round.bulletCount + 1
-            direction = direction + increment
-            increment = math.pi/(math.random(12,18)) / bullets
-          end
-        elseif guns.equipped == guns['pistol'] then
-          spawnBullet(player.damageUp, player_angle() - math.pi/14 + math.pi/math.random(11,17))
-          round.bulletCount = round.bulletCount + 1
-        else
-          spawnBullet(player.damageUp, player_angle())
-          round.bulletCount = round.bulletCount + 1
-        end
-        
         spawnBulletParticles(player.p.pSystem, math.random(6,12), player.damageUp)
+        guns.equipped.currAmmo = guns.equipped.currAmmo - 1
+        fireBullets()
+        
         if guns.equipped.currAmmo == 0 then reload() end
       elseif guns.equipped.currAmmo == 0 then
         reload()
@@ -200,13 +206,4 @@ function love.mousereleased(x, y, button)
       end
     end
   end
-end
-
-function bulletAnchorPoints(deltaX,deltaY)
-	deltaXrotated = deltaX * cos(player_angle()) - deltaY * sin(player_angle())
-  deltaYrotated = deltaX * sin(player_angle()) + deltaY * cos(player_angle())
-  
-  jointX = playerX + deltaXrotated
-  jointY = playerY + deltaYrotated
-  return jointX, jointY
 end

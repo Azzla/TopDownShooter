@@ -128,6 +128,7 @@ function collideWithZombie(zom)
   zom.collideable = false
   if not player.isInvincible then
     player.health = player.health - zom.damage
+    TextManager.playerDmgPopup(player.x, player.y, zom)
     screenShake(.15, 1)
     shaders.damaged = true
     shaderTimer:after(.15, function() shaders.damaged = false end)

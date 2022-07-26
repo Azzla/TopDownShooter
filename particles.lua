@@ -1,4 +1,5 @@
 particles = {}
+deathParticles = {}
 
 bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle1.png'), 100)
 bloodSystem:setParticleLifetime ( .05,.4 )
@@ -16,6 +17,19 @@ dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX
 dashSystem:setParticleLifetime (.05, .3)
 dashSystem:setSizes(1)
 dashSystem:setSpeed(60)
+
+function drawPlayerParticles()
+  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
+  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
+  local handOffsetX  = handDistance * math.cos(handAngle)
+  local handOffsetY  = handDistance * math.sin(handAngle)
+  
+  love.graphics.draw(player.p.pSystem, player.x + handOffsetX, player.y + handOffsetY, nil, 1, 1)
+  love.graphics.draw(player.dashP.pSystem, player.x, player.y, nil, 1, 1)
+  for i,d in pairs(deathParticles) do
+    love.graphics.draw(d.pSystem, d.x, d.y, nil, 5, 5)
+  end
+end
 
 function spawnDashParticleSystem(x, y)
   local pFX = {}
@@ -36,6 +50,16 @@ function spawnDashParticles(pSys, numOfParticles)
     pSys:emit(3)
     direction = direction + increment
   end
+end
+
+function spawnDeathParticleSystem(x, y)
+  local pFX = {}
+  pFX.x = x
+  pFX.y = y
+  pFX.pSystem = bloodSystem:clone()
+  
+  table.insert(deathParticles, pFX)
+  return pFX
 end
 
 function spawnBloodParticleSystem(x, y)
@@ -89,6 +113,11 @@ function particleUpdate(dt)
   for i,p in ipairs(particles) do
     if p.pSystem:isActive() == true then
       p.pSystem:update(dt)
+    end
+  end
+  for i,d in ipairs(deathParticles) do
+    if d.pSystem:isActive() == true then
+      d.pSystem:update(dt)
     end
   end
 end

@@ -1,3 +1,5 @@
+local TextManager = require('textManager')
+
 round = {}
 
 round.difficulty = 1
@@ -5,7 +7,7 @@ round.gameState = 4
 round.time = 1
 round.next = false
 round.zombiesSpawned = 0
-round.zombiesMaxSpawn = 10
+round.zombiesMaxSpawn = 1
 round.totalKilled = 0
 round.currentKilled = 0
 round.uiBox = love.graphics.newImage('sprites/UIBox1.png')
@@ -13,6 +15,8 @@ round.uiBox2 = love.graphics.newImage('sprites/UIBox2.png')
 round.uiBox3 = love.graphics.newImage('sprites/UIBox3.png')
 round.bulletCount = 0
 round.isDespawning = false
+round.despawnText = false
+round.despawnTime = 7
 
 roundTimer = globalTimer.new()
 
@@ -31,7 +35,14 @@ function updateRounds(dt)
       
       --remove lingering drops
       round.isDespawning = true
-      roundTimer:after(6, function()
+      round.despawnText = false
+      
+      if not round.despawnText then
+        round.despawnText = true
+        TextManager.dropsDespawning(round.despawnTime)
+      end
+      
+      roundTimer:after(round.despawnTime, function()
         round.isDespawning = false
         round.difficulty = round.difficulty + 1
         love.audio.play(soundFX.roundStart)
@@ -111,11 +122,17 @@ table.insert(KEYPRESSED, function(key, scancode)
     end
   elseif key == "right" then
     if round.gameState == 2 then
+      --remove stuff
       for i=#zombies,1,-1 do
         local z = zombies[i]
         world:remove(z)
         table.remove(zombies, i)
       end
+      for i=#coins,1,-1 do
+        local c = coins[i]
+        table.remove(coins, i)
+      end
+      
       round.zombiesSpawned = 0
       round.currentKilled = 0
       round.difficulty = round.difficulty + 1
@@ -198,9 +215,11 @@ function zombieSpawning()
       round.zombiesSpawned = round.zombiesSpawned + 1
       if round.difficulty >= 10 and round.zombiesSpawned%6 == 0 then
         spawnBigZombie()
+        round.zombiesSpawned = round.zombiesSpawned + 1
       end
       if round.difficulty >= 20 and round.zombiesSpawned%5 == 0 then
         spawnSmallZombie()
+        round.zombiesSpawned = round.zombiesSpawned + 1
       end
     end
   end

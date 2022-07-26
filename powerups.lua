@@ -34,6 +34,7 @@ function spawnPowerup(index, zombie)
   powerup.hitRadius = 12
   powerup.collision = true
   powerup.duration = 1
+  powerup.speed = math.random(70+math.ceil(shop.skills.magnet*4),120+math.ceil(shop.skills.magnet*4))
   
   if powerup.id == 2 then
     powerup.duration = 10
@@ -50,7 +51,7 @@ end
 function powerupChance(zombie)
   local random = math.random(1, 100)
   
-  if random > 94 then
+  if random > 92 then
     --chances
     local chances = {100,110,120,126} --health / damage / speed / invincibility
     local total = chances[#chances] --value of last item in table
@@ -108,7 +109,10 @@ function powerupUpdate(dt)
     for i,pow in ipairs(powerupsActive) do
       pow.timer:update(dt)
       
-      if distanceBetween(player.x, player.y, pow.x, pow.y) <= pow.hitRadius and pow.collision then
+      if distanceBetween(pow.x, pow.y, player.x, player.y) > pow.hitRadius and distanceBetween(pow.x, pow.y, player.x, player.y) < (25 * shop.skills.magnet) then
+        pow.x = pow.x + math.cos(zombie_angle_wrld(pow)) * pow.speed * dt
+        pow.y = pow.y + math.sin(zombie_angle_wrld(pow)) * pow.speed * dt
+      elseif distanceBetween(player.x, player.y, pow.x, pow.y) <= pow.hitRadius and pow.collision then
         for i,p in pairs(powerupsActive) do
           if p.active and p.id == pow.id then
             p.active = false

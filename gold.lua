@@ -2,12 +2,22 @@ gold = {}
 gold.total = 0
 gold.bigSprite = love.graphics.newImage('sprites/coinBig.png')
 coins = {}
+
 copperSprite = love.graphics.newImage('sprites/coins/coinCopper.png')
 silverSprite = love.graphics.newImage('sprites/coins/coinSilver.png')
 goldSprite = love.graphics.newImage('sprites/coins/coinGold.png')
 blackSprite = love.graphics.newImage('sprites/coins/coinBlack.png')
 azureSprite = love.graphics.newImage('sprites/coins/coinAzure.png')
 rubySprite = love.graphics.newImage('sprites/coins/coinRuby.png')
+local values = {
+  copper = 1,
+  silver = 3,
+  gold = 10,
+  black = 50,
+  azure = 100,
+  ruby = 250
+}
+local collectionDist = 6
 
 coinAlpha = { alpha = 1 }
 targetCoinAlpha = { alpha = 0 }
@@ -17,10 +27,10 @@ local flag = true
 function updateGold(dt)
   if round.gameState == 2 then
     for i,c in ipairs(coins) do
-      if distanceBetween(c.x, c.y, player.x, player.y) > 6 and distanceBetween(c.x, c.y, player.x, player.y) < (25 * shop.skills.magnet) then
+      if distanceBetween(c.x, c.y, player.x, player.y) > collectionDist and distanceBetween(c.x, c.y, player.x, player.y) < (25 * shop.skills.magnet) then
         c.x = c.x + math.cos(zombie_angle_wrld(c)) * c.speed * dt
         c.y = c.y + math.sin(zombie_angle_wrld(c)) * c.speed * dt
-      elseif distanceBetween(c.x, c.y, player.x, player.y) < 6 then
+      elseif distanceBetween(c.x, c.y, player.x, player.y) < collectionDist then
         gold.total = gold.total + c.value
         c.collected = true
         calculateCoinAudio()
@@ -59,112 +69,48 @@ function drawCoins()
   love.graphics.setColor(1,1,1,1)
 end
 
-function spawnRuby(obj)
+function spawnCoin(obj, value, sprite)
   local coin = {}
   
   coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
   coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = rubySprite
+  coin.sprite = sprite
   coin.collected = false
-  coin.value = 250
-  coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
-  
-  table.insert(coins, coin)
-end
-function spawnAzure(obj)
-  local coin = {}
-  
-  coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = azureSprite
-  coin.collected = false
-  coin.value = 100
-  coin.speed = math.random(80+math.ceil(shop.skills.magnet*2),140+math.ceil(shop.skills.magnet*2))
-  
-  table.insert(coins, coin)
-end
-function spawnBlack(obj)
-  local coin = {}
-  
-  coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = blackSprite
-  coin.collected = false
-  coin.value = 50
-  coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
-  table.insert(coins, coin)
-end
-function spawnGold(obj)
-  local coin = {}
-  
-  coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = goldSprite
-  coin.collected = false
-  coin.value = 10
-  coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
-  
-  table.insert(coins, coin)
-end
-function spawnSilver(obj)
-  local coin = {}
-  
-  coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = silverSprite
-  coin.collected = false
-  coin.value = 3
-  coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
-  
-  table.insert(coins, coin)
-end
-function spawnCopper(obj)
-  local coin = {}
-  
-  coin.x = obj.x + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.y = obj.y + math.random(-obj.goldSpawn, obj.goldSpawn)
-  coin.sprite = copperSprite
-  coin.collected = false
-  coin.value = 1
+  coin.value = value
   coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
   
   table.insert(coins, coin)
 end
 
 function spawnKillReward(zombie)
-  
-  if round.difficulty >= 30 then
-    zombie.killReward = zombie.killReward * 1.5
-  end
-  while zombie.killReward >= 250 do
-    spawnRuby(zombie)
-    zombie.killReward = zombie.killReward - 250
-  end
-  while zombie.killReward >= 100 do
-    spawnAzure(zombie)
-    zombie.killReward = zombie.killReward - 100
-  end
-  while zombie.killReward >= 50 do
-    spawnBlack(zombie)
-    zombie.killReward = zombie.killReward - 50
-  end
-  while zombie.killReward >= 10 do
-    spawnGold(zombie)
-    zombie.killReward = zombie.killReward - 10
+  while zombie.killReward >= values.ruby do
+    spawnCoin(zombie, values.ruby, rubySprite)
+    zombie.killReward = zombie.killReward - values.ruby
   end
   
-  if zombie.killReward > 0 then
-    while zombie.killReward >= 3 do
-      spawnSilver(zombie)
-      zombie.killReward = zombie.killReward - 3
-    end
-    
-    if zombie.killReward > 0 then
-      while zombie.killReward >= 1 do
-        spawnCopper(zombie)
-        zombie.killReward = zombie.killReward - 1
-      end
-    end
+  while zombie.killReward >= values.azure do
+    spawnCoin(zombie, values.azure, azureSprite)
+    zombie.killReward = zombie.killReward - values.azure
+  end
+  
+  while zombie.killReward >= values.black do
+    spawnCoin(zombie, values.black, blackSprite)
+    zombie.killReward = zombie.killReward - values.black
+  end
+  
+  while zombie.killReward >= values.gold do
+    spawnCoin(zombie, values.gold, goldSprite)
+    zombie.killReward = zombie.killReward - values.gold
+  end
+  
+  while zombie.killReward >= values.silver do
+    spawnCoin(zombie, values.silver, silverSprite)
+    zombie.killReward = zombie.killReward - values.silver
+  end
+  
+  while zombie.killReward >= values.copper do
+    spawnCoin(zombie, values.copper, copperSprite)
+    zombie.killReward = zombie.killReward - values.copper
   end
 end
 

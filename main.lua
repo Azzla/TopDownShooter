@@ -1,14 +1,10 @@
 function love.load()
-  KEYPRESSED={}
-  
   love.graphics.setDefaultFilter("nearest", "nearest")
   
   love.window.setMode(0, 0)
   --love.window.setMode(1920, 1080)
   screen_width = love.graphics.getWidth()
   screen_height = love.graphics.getHeight()
-  zoom_factor = 6
---  if screen_height >= 1440 then zoom_factor = 6 end
   love.window.setFullscreen(true, "desktop")
   
   --font
@@ -17,25 +13,21 @@ function love.load()
   pixelFont:setFilter( "nearest", "nearest" )
   
   --map
-  sti = require('SimpleTI/sti')
+  sti = require('libs/SimpleTI/sti')
   mainMap = sti('sprites/mainMapV2.lua')
   map_width = mainMap.width * mainMap.tilewidth
   map_height = mainMap.height * mainMap.tileheight
   
-  --loadingScreen(2)
-  globalTimer = require('hump-master/timer')
-  tween = require('tween-master/tween')
-  anim8 = require('anim8-master/anim8')
-  
-  Class = require('floating-text-master/class')
-  require('floating-text-master/effects/PopupText')
-  require('floating-text-master/effects/PopupTextManager')
-  gPopupManager = PopupTextManager()
-  
-  bump = require('bump-master/bump')
-  --collision world
+  --libs
+  globalTimer = require('libs/hump/timer')
+  tween = require('libs/tween/tween')
+  anim8 = require('libs/anim8/anim8')
+  bump = require('libs/bump/bump')
   world = bump.newWorld(32)
   
+  --modules
+  KEYPRESSED={}
+  TextManager = require('textManager')
   require('shaders')
   require('sounds')
   loadSoundFX()
@@ -60,7 +52,6 @@ function love.load()
   nightCycle()
   reticle = love.graphics.newImage('sprites/cursor.png')
   love.mouse.setVisible(false)
-  currentPrompt = nil
   pausedAngle = nil
 end
 
@@ -70,7 +61,7 @@ function love.update(dt)
     globalTimer.update(dt)
   end
   if round.gameState == 2 then
-    gPopupManager:update(dt)
+    TextManager.update(dt)
     updatePromptAlpha(dt)
     updateShaderTimers(dt)
     updateCameraTimers(dt)
@@ -79,6 +70,7 @@ function love.update(dt)
     walkAnimation(dt)
     zombieUpdate(dt)
     bulletUpdate(dt)
+    autoShoot(dt)
     grenadeUpdate(dt)
     updateRounds(dt)
     updateGold(dt)
@@ -121,13 +113,14 @@ function love.draw()
     if round.difficulty >= 20 then drawNightShader() end
     
     --Particles
-    love.graphics.draw(player.p.pSystem, player.x, player.y, nil, 1, 1)
-    love.graphics.draw(player.dashP.pSystem, player.x, player.y, nil, 1, 1)
+    drawPlayerParticles()
     
-    -- Draw all objects
+    -- Draw objects
     drawEverything()
-    gPopupManager:render()
-    collisionDebug()
+    
+    --Game Text
+    TextManager.drawGame()
+--    collisionDebug()
     
     --Energy
     drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
@@ -136,10 +129,6 @@ function love.draw()
     love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
     
     love.graphics.setShader()
---    if currentPrompt == nil then
---      currentPrompt = prompts.wasd
---    end
---    drawPrompt(currentPrompt, origin + 130, origin2 + 40, prompts.alpha.alpha)
     
     cam:detach()
     cam:zoomTo(6)
@@ -166,6 +155,9 @@ function love.draw()
     love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
     love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
     
+    --UI Text
+    TextManager.drawUI()
+    
     --Round
     love.graphics.draw(round.uiBox, origin + 2, origin2 + 21)
     love.graphics.printf("Round", origin + 16, origin2 + 24, 100, "left", nil, .6, .6)
@@ -181,8 +173,8 @@ function love.draw()
     ret1,ret2 = cam:mousePosition()
     --useful camera-translated coordinates
     origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / zoom_factor)
-    originRight = origin + (screen_width / zoom_factor)
+    origin2Bot = origin2 + (screen_height / 6)
+    originRight = origin + (screen_width / 6)
     originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
     
     love.graphics.setShader(shopShader)
@@ -220,8 +212,8 @@ function love.draw()
     cam:attach()
     --useful camera-translated coordinates
     origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / zoom_factor)
-    originRight = origin + (screen_width / zoom_factor)
+    origin2Bot = origin2 + (screen_height / 6)
+    originRight = origin + (screen_width / 6)
     originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
     
     love.graphics.setShader(pauseShader)
@@ -245,33 +237,14 @@ function love.keypressed(key, unicode)
 end
 
 function drawEverything()
-  for i,z in ipairs(zombies) do
-      love.graphics.draw(z.p.pSystem, z.x, z.y, nil, 3, 3)
-      if z.damage == 10 then
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
-        if z.healthBar.isHidden == false then
-          z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 6, -5)
-        end
-      elseif z.damage == 25 then
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
-        if z.healthBar.isHidden == false then
-          z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, 1.5, 1.5, 6, 8)
-        end
-      else
-        z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, zomAssets.zombieWidth/2, 1 + zomAssets.zombieHeight/2)
-        if z.healthBar.isHidden == false then
-          z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 7, 2)
-        end
-      end
-    end
+  drawZombies()
+  for i,b in ipairs(bullets) do
+    love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+  end
     
-    for i,b in ipairs(bullets) do
-      love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.offsX, b.offsY)
-    end
-    
-    drawCoins()
-    drawPowerups()
-    drawGrenades()
+  drawCoins()
+  drawPowerups()
+  drawGrenades()
 end
 
 function collisionDebug()
@@ -282,14 +255,6 @@ function collisionDebug()
     love.graphics.rectangle('line', x,y,w,h)
   end
   love.graphics.setColor(1,1,1,1)
-end
-
-function loadingScreen(s)
-  love.graphics.clear()
-  love.graphics.draw(love.graphics.newImage('sprites/mainMap.png'))
-  love.graphics.printf("Loading...", love.graphics.getWidth()/2, love.graphics.getHeight()-100, 10000, "left", nil, 5, 5, 30)
-  love.graphics.present()
-  love.timer.sleep(s) -- simulates 1 second load time
 end
 
 function player_angle()

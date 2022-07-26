@@ -56,7 +56,7 @@ function loadSoundFX()
   soundFX.roundStart:setVolume(.7)
   soundFX.wind:setVolume(0)
   soundFX.music:setVolume(.35)
-  soundFX.musicBoss:setVolume(.6)
+  soundFX.musicBoss:setVolume(.35)
   soundFX.powerup:setVolume(.5)
   soundFX.health:setVolume(.33)
   soundFX.invincible:setVolume(.3)
@@ -72,9 +72,9 @@ end
 function playMusic()
   if soundFX.music:isPlaying() then
     love.audio.pause(soundFX.music)
-    love.audio.play(soundFX.musicBoss)
+    love.audio.play(soundFX.music)
   else
-    love.audio.play(soundFX.musicBoss)
+    love.audio.play(soundFX.music)
   end
 end
 
@@ -102,7 +102,7 @@ function gameMusic(dt)
     end
     
     if soundFX.music:getVolume() ~= .35 then soundFX.music:setVolume(.35) end
-    if soundFX.musicBoss:getVolume() ~= .6 then soundFX.musicBoss:setVolume(.6) end
+    if soundFX.musicBoss:getVolume() ~= .35 then soundFX.musicBoss:setVolume(.35) end
   end
   
   if round.gameState == 3 then

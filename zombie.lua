@@ -1,5 +1,5 @@
 zombies = {}
-zomAssets = {}
+local zomAssets = {}
 zomAssets.zombieFrame = love.graphics.newImage('sprites/zombies/zombie.png')
 zomAssets.zombieWidth = zomAssets.zombieFrame:getWidth()
 zomAssets.zombieHeight = zomAssets.zombieFrame:getHeight()
@@ -10,6 +10,28 @@ zomAssets.zombieBigHeight = zomAssets.bigZombieFrame:getHeight()
 zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWalk.png')
 zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
 zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
+
+function drawZombies()
+  for i,z in ipairs(zombies) do
+    love.graphics.draw(z.p.pSystem, z.x, z.y, nil, 3, 3)
+    if z.damage == 10 then
+      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
+      if z.healthBar.isHidden == false then
+        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 6, -5)
+      end
+    elseif z.damage == 25 then
+      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
+      if z.healthBar.isHidden == false then
+        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, 1.5, 1.5, 6, 8)
+      end
+    else
+      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, zomAssets.zombieWidth/2, 1 + zomAssets.zombieHeight/2)
+      if z.healthBar.isHidden == false then
+        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 7, 2)
+      end
+    end
+  end
+end
 
 function spawnZombie()
   local side = math.random(1,4)
@@ -77,6 +99,7 @@ function spawnBigZombie()
   zombie.width = zombie.frame:getWidth()
   zombie.height = zombie.frame:getHeight()
   zombie.dead = false
+  zombie.collideable = true
   zombie.zombieDamaged = false
   zombie.killReward = 60 + math.random(round.difficulty*2, round.difficulty*3)
   zombie.goldSpawn = 15
@@ -117,6 +140,7 @@ function spawnSmallZombie()
   zombie.width = zombie.frame:getWidth()
   zombie.height = zombie.frame:getHeight()
   zombie.dead = false
+  zombie.collideable = true
   zombie.zombieDamaged = false
   zombie.killReward = 30 + math.random(round.difficulty*2, round.difficulty*3)
   zombie.health = 14 * (1+math.ceil(round.difficulty/2))
@@ -244,7 +268,7 @@ function zombieMoveHandler(zom,dt)
   
   for i=1,length do
     local other = cols[i].other
-    if other.isBullet then
+    if other.isBullet and zom.collideable then
       collideWithBullet(other, zom)
     elseif other.isPlayer then
       if zom.collideable then

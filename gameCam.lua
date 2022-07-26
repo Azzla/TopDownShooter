@@ -1,6 +1,6 @@
-cameraFile = require('hump-master/camera')
+cameraFile = require('libs/hump/camera')
 cam = cameraFile()
-cam:zoom(zoom_factor)
+cam:zoom(guns.equipped.zoomFactor)
 cam:lookAt(player.x, player.y)
 camSmoothing = cam.smooth.damped(8)
 

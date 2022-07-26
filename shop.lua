@@ -28,7 +28,7 @@ shop.rate = 1
 
 shop.rocketsPurchased = 0
 
---define table of functions for purchasing skills
+--define functions for purchasing skills
 skills = {
   function()
     if gold.total >= shop.skills.price then

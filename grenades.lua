@@ -29,21 +29,7 @@ function spawnGrenade()
     
     for i,z in ipairs(zombies) do
       if distanceBetween(grenade.x, grenade.y, z.x, z.y) <= grenade.dmgRadius then
-        gPopupManager:addPopup(
-        {
-            text = tostring(grenade.damage),
-            font = pixelFont,
-            color = {r = .6, g = .1, b = 0, a = 1},
-            x = z.x + math.random(-10,10),
-            y = z.y,
-            scaleX = .5,
-            scaleY = .5,
---            blendMode = 'add',
-            fadeOut = {start = .5, finish = .7},
-            dX = math.random(-5,5),
-            dY = -20,
-            duration = .7
-        })
+        TextManager.grenadeDmgPopup(grenade, z)
         spawnBloodParticles(z.p.pSystem, math.random(12,24), grenade_angle(grenade, z))
         z.zombieDamaged = true
         
@@ -103,11 +89,11 @@ function grenadeUpdate(dt)
         
         local nx, ny = cols[i].normal.x, cols[i].normal.y
         if (nx < 0 and g.vx > 0) or (nx > 0 and g.vx < 0) then
-          g.vx = -g.vx * .1
+          g.vx = -g.vx * .01
         end
 
         if (ny < 0 and g.vy > 0) or (ny > 0 and g.vy < 0) then
-          g.vy = -g.vy * .1
+          g.vy = -g.vy * .01
         end
       end
     end
@@ -130,4 +116,20 @@ function grenadeUpdate(dt)
       table.remove(grenades, i)
     end
   end
+end
+
+function spawnExplosion(x,y)
+  local explosion = {}
+  explosion.x = x
+  explosion.y = y
+  explosion.sprite = love.graphics.newImage('sprites/explosion.png')
+  explosion.grid = anim8.newGrid(16, 16, 128, 16)
+  explosion.animation = anim8.newAnimation(explosion.grid("1-8",1), 0.01, explosion.onLoop)
+  explosion.dead = false
+  explosion.onLoop = function(anim, loops)
+    anim:destroy()
+    explosion.dead = true
+  end
+
+  table.insert(explosions, explosion)
 end
