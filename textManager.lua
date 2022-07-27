@@ -39,11 +39,11 @@ function TextManager.drawGame()
   gPopupManager:render()
 end
 
-function TextManager.drawUI()
-  TextManager.introText()
+function TextManager.drawUI(o,o2,oB,oR,oXC,oYC)
+  TextManager.introText(oXC, o2)
   
   if promptsRan.drops then
-    Typo.draw(originRight - 150, origin2Bot - 10, alpha.a)
+    Typo.draw(oR - 150, oB - 10, alpha.a)
     love.graphics.setColor(1,1,1,1)
   end
 end
@@ -101,7 +101,25 @@ function TextManager.grenadeDmgPopup(g, z)
   })
 end
 
-function TextManager.introText()
+function TextManager.genericPopup(x, y, str)
+  gPopupManager:addPopup(
+  {
+      text = str,
+      font = pixelFont,
+      color = {r = 1, g = 1, b = 1, a = 1},
+      x = x - 10,
+      y = y - 5,
+      scaleX = .6,
+      scaleY = .6,
+      fadeOut = {start = .7, finish = 1},
+      dX = math.random(-5,5),
+      dY = -20,
+      duration = 1
+  })
+end
+
+
+function TextManager.introText(oXC, o2)
   if not promptsRan.annihilate then
     local time = 3
     local index = Typo.new("ANNIHILATE.", time, 0.1, 500, 'center', 1.5, pixelFont, { 255, 255, 255 })
@@ -116,8 +134,8 @@ function TextManager.introText()
   
   if promptsRan.annihilateRect then
     love.graphics.setColor(0,0,0,.7)
-    love.graphics.rectangle('fill', originXCenter - 100, origin2 + 55, 200, 28)
-    Typo.draw(originXCenter - 375, origin2 + 60, 1)
+    love.graphics.rectangle('fill', oXC - 100, o2 + 55, 200, 28)
+    Typo.draw(oXC - 375, o2 + 60, 1)
     love.graphics.setColor(1,1,1,1)
   end
 end

@@ -1,6 +1,8 @@
+local shopButtonManager = require('buttonManager')
+
 shop = {}
-shopButtons = {}
-shopButtonsCreated = false
+local shopButtonsCreated = false
+local shopButtons = nil
 
 shop.buttonSprite = love.graphics.newImage('sprites/shopButton.png')
 shop.buttonSpriteHot = love.graphics.newImage('sprites/shopButtonHot.png')
@@ -17,16 +19,11 @@ shop.skills.speedPurch = 0
 shop.skills.ratePurch = 0
 shop.skills.magPurch = 0
 shop.skills.ammoPurch = 0
-shop.skills.pierce = 0
-shop.skills.defense = 0
 shop.skills.maxAmmo = 6
 shop.skills.reload = 2.5
 shop.skills.speed = 0
-shop.skills.bulletSpeed = 0
 shop.skills.magnet = 1
 shop.rate = 1
-
-shop.rocketsPurchased = 0
 
 --define functions for purchasing skills
 skills = {
@@ -74,12 +71,46 @@ skills = {
   end
 }
 
-function displayShop()
+function shopUpdate(dt)
+  --Check if upgrades maxed out
+  if not shopButtonsCreated then return end
+  for i=1,#shopButtons do
+    local b = shopButtons[i]
+    if not b then return end
+    if b.clicked >= 5 then
+      shopButtonManager.remove(i)
+      shopButtons = shopButtonManager.getButtons()
+    end
+  end
+end
+
+function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
   love.graphics.draw(shop.display, originXCenter, originYCenter, nil, 1, 1, shop.display:getWidth()/2, shop.display:getHeight()/2)
   love.graphics.print("Current Price: "..shop.skills.price, originXCenter - 110, origin2Bot - 17)
   
-  --Buttons
-  drawShopButtons()
+  --create buttons -- TODO: this code sucks dick balls
+  if not shopButtonsCreated then
+    for i=1,#skills do
+      local fn = skills[i]
+      if i == 1 then
+        shopButtonManager.new(originXCenter - 90, originYCenter - 70, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      elseif i == 2 then
+        shopButtonManager.new(originXCenter - 90, originYCenter - 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      elseif i == 3 then
+        shopButtonManager.new(originXCenter - 90, originYCenter, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      elseif i == 4 then
+        shopButtonManager.new(originXCenter - 90, originYCenter + 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      elseif i == 5 then
+        shopButtonManager.new(originXCenter + 20, originYCenter - 70, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      elseif i == 6 then
+        shopButtonManager.new(originXCenter + 20, originYCenter + 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+      end
+    end
+    shopButtons = shopButtonManager.getButtons()
+    shopButtonsCreated = true
+  end
+  
+  shopButtonManager.draw(ret1, ret2)
   
   --Stats
   love.graphics.printf(shop.skills.damPurch, originXCenter - 145, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
@@ -118,7 +149,7 @@ end
 
 function resetShopButtons()
   shopButtonsCreated = false
-  shopButtons = {}
+  shopButtonManager.clear()
 end
 
 function purchase()
@@ -131,41 +162,8 @@ function purchase()
   shop.skills.healthPrice = shop.skills.price
 end
 
-function newShopButton(x, y, fn)
-  local button = {}
-  button.x = x
-  button.y = y
-  button.sprite = shop.buttonSprite
-  button.spriteHot = shop.buttonSpriteHot
-  button.fn = fn
-  
-  table.insert(shopButtons, button)
-end
-
-
-function drawShopButtons()
-  for i, button in ipairs(shopButtons) do
-    button.last = button.now
-    
-    
-    --check if hovering
-    local isHot = ret1 > button.x and ret1 < button.x + button.sprite:getWidth() and 
-                  ret2 > button.y and ret2 < button.y + button.sprite:getHeight()
-    --draw sprite
-    if isHot then
-      love.graphics.draw(button.spriteHot, button.x, button.y)
-    else
-      love.graphics.draw(button.sprite, button.x, button.y)
-    end
-    --check for click
-    if love.mouse.isDown(1) and not oldmousedown and isHot then
-      button.fn()
-    end
-  end
-  oldmousedown = love.mouse.isDown(1)
-end
-
 function resetShop()
+  resetShopButtons()
   shop.skills.price = 10
   shop.skills.grenades = 10
   shop.skills.damage = 6
@@ -174,12 +172,9 @@ function resetShop()
   shop.skills.ratePurch = 0
   shop.skills.magPurch = 0
   shop.skills.ammoPurch = 0
-  shop.skills.pierce = 0
-  shop.skills.defense = 0
   shop.skills.maxAmmo = 6
   shop.skills.reload = 2.5
   shop.skills.speed = 0
-  shop.skills.bulletSpeed = 0
   shop.skills.magnet = 1
   shop.rate = 1
 end

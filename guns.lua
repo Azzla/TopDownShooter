@@ -55,12 +55,12 @@ guns.sniper.zoomFactor = 4.5
 
 guns.shotgun = {}
 guns.shotgun.upgrades = {
-  dmg = 10,
+  dmg = 0,
   reload = 1,
   v = 0,
   clipSize = 0,
-  spread = 5,
-  bullets = 2
+  spread = 0,
+  bullets = 0
 }
 
 guns.shotgun.unlocked = true
@@ -134,7 +134,9 @@ table.insert(KEYPRESSED, function(key, scancode)
 end)
 
 function processGunSounds()
-  if guns.equipped.sound:isPlaying() == true then
+  if guns.equipped == guns.uzi then
+    calculateLazerAudio()
+  elseif guns.equipped.sound:isPlaying() == true then
     if guns.equipped.sound == soundFX.lazer then
       love.audio.play(soundFX.lazer2)
     else

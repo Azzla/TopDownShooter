@@ -11,185 +11,183 @@ zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWal
 zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
 zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
 
+zombieTypes = {}
+zombieTypes.normal = {
+  damage        = 15,
+  hbScaleX      = 1,
+  hbScaleY      = 1,
+  hbOffsX       = 6,
+  hbOffsY       = -5,
+  pScale        = 3,
+  friction      = 12,
+  rotFactor     = 19,
+  rotActiveDist = 8,
+  collScale     = .8,
+  activeDist    = 90,
+  goldSpawn     = 8,
+  frameTime     = .12,
+  frameSize     = 15,
+  spriteGap     = 1,
+  
+  _health = function() return 14 * (1+math.ceil(round.difficulty/3)) end,
+  _killReward = function() return 5 + math.random(round.difficulty, math.ceil(round.difficulty*1.7)) end,
+  _speedMax = function() return 6 + math.random(0.0,round.difficulty/5) end,
+  _speedMin = function() return 2.5 + math.random(0.0,round.difficulty/5) end,
+  _spawn = function() return math.random(280,400) end,
+  sprite = zomAssets.zombieSprite,
+  frame = zomAssets.zombieFrame,
+  width = zomAssets.zombieFrame:getWidth(),
+  height = zomAssets.zombieFrame:getHeight()
+}
+
+--22 rotFactor
+
+--34 rotFactor
+
 function drawZombies()
   for i,z in ipairs(zombies) do
-    love.graphics.draw(z.p.pSystem, z.x, z.y, nil, 3, 3)
-    if z.damage == 10 then
-      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
-      if z.healthBar.isHidden == false then
-        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 6, -5)
-      end
-    elseif z.damage == 25 then
-      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.frame:getWidth()/2, z.frame:getHeight()/2)
-      if z.healthBar.isHidden == false then
-        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, 1.5, 1.5, 6, 8)
-      end
-    else
-      z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, zomAssets.zombieWidth/2, 1 + zomAssets.zombieHeight/2)
-      if z.healthBar.isHidden == false then
-        z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, .8, .8, 7, 2)
-      end
+    love.graphics.draw(z.p.pSystem, z.x, z.y, nil, z.pScale, z.pScale)
+    
+    z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.oX, z.oY)
+    if z.healthBar.isHidden == false then
+      z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, z.hbScaleX, z.hbScaleY, z.hbOffsX, z.hbOffsY)
     end
   end
 end
 
-function spawnZombie()
+function spawnZombie(zombieType)
   local side = math.random(1,4)
-  local zombie = {}
+  local zombie = shallowCopy(zombieType)
+  
+  --stats determined at spawn
+  zombie.health = zombie._health()
+  zombie.killReward = zombie._killReward()
+  zombie.speedMax = zombie._speedMax()
+  zombie.speedMin = zombie._speedMin()
+  
+  --defaults
   zombie.isZombie = true
   zombie.x = 0
   zombie.y = 0
   zombie.vx = 0
   zombie.vy = 0
-  zombie.friction = 12
   zombie.id = #zombies + 1
   zombie.currentAngle = 0
   zombie.rotSpeed = 0
-  zombie.hitRadius = 9
-  zombie.activeDist = 90
-  zombie.speedMax = 6 + math.random(0.0,round.difficulty/5)
-  zombie.speedMin = 2.5 + math.random(0.0,round.difficulty/5)
   zombie.speed = zombie.speedMin
-  zombie.spawn = math.random(280,400)
-  zombie.damage = 15
-  zombie.sprite = zomAssets.zombieSprite
-  zombie.frame = zomAssets.zombieFrame
-  zombie.width = zombie.frame:getWidth()
-  zombie.height = zombie.frame:getHeight()
+  zombie.oX = zombie.width/2
+  zombie.oY = zombie.height/2
+  zombie.healthBar = {}
   zombie.dead = false
   zombie.collideable = true
   zombie.zombieDamaged = false
-  zombie.killReward = 5 + math.random(round.difficulty, math.ceil(round.difficulty*1.7))
-  zombie.goldSpawn = 8
-  zombie.health = 14 * (1+math.ceil(round.difficulty/3))
-  zombie.grid = anim8.newGrid(15, 15, 128, 16, nil, nil, 1)
-  zombie.animation = anim8.newAnimation(zombie.grid("1-8",1), 0.12)
   
-  zombie.healthBar = {}
-  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
-  
+  --animations/particles
+  zombie.grid = anim8.newGrid(zombie.frameSize, zombie.frameSize, zombie.sprite:getWidth(), zombie.sprite:getHeight(), nil, nil, zombie.spriteGap)
+  zombie.animation = anim8.newAnimation(zombie.grid("1-8", 1), zombie.frameTime)
   zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
-  placeZombie(zombie, side)
   
-  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
+  placeZombie(zombie, side)
+  world:add(zombie, zombie.x - (zombie.oX * zombie.collScale), zombie.y - (zombie.oY * zombie.collScale), zombie.width * zombie.collScale, zombie.height * zombie.collScale)
+  
+  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
   table.insert(zombies, zombie)
 end
 
-function spawnBigZombie()
-  local side = math.random(1,4)
-  local zombie = {}
-  zombie.isZombie = true
-  zombie.x = 0
-  zombie.y = 0
-  zombie.vx = 0
-  zombie.vy = 0
-  zombie.friction = 14
-  zombie.id = #zombies + 1
-  zombie.currentAngle = 0
-  zombie.rotSpeed = 0
-  zombie.hitRadius = 15
-  zombie.activeDist = 120
-  zombie.speedMin = 4.5
-  zombie.speedMax = 9 + math.random(0,round.difficulty/2)
-  zombie.speed = zombie.speedMin
-  zombie.spawn = math.random(350,400)
-  zombie.damage = 25
-  zombie.sprite = zomAssets.bigZombieSprite
-  zombie.frame = zomAssets.bigZombieFrame
-  zombie.width = zombie.frame:getWidth()
-  zombie.height = zombie.frame:getHeight()
-  zombie.dead = false
-  zombie.collideable = true
-  zombie.zombieDamaged = false
-  zombie.killReward = 60 + math.random(round.difficulty*2, round.difficulty*3)
-  zombie.goldSpawn = 15
-  zombie.health = 55 * (1+math.ceil(round.difficulty/2))
-  zombie.grid = anim8.newGrid(30, 30, 256, 32, nil, nil, 2)
-  zombie.animation = anim8.newAnimation(zombie.grid("1-8",1), 0.2)
-  zombie.healthBar = {}
-  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
+--function spawnBigZombie()
+--  local side = math.random(1,4)
+--  local zombie = {}
+--  zombie.isZombie = true
+--  zombie.x = 0
+--  zombie.y = 0
+--  zombie.vx = 0
+--  zombie.vy = 0
+--  zombie.friction = 14
+--  zombie.id = #zombies + 1
+--  zombie.currentAngle = 0
+--  zombie.rotSpeed = 0
+--  zombie.hitRadius = 15
+--  zombie.activeDist = 120
+--  zombie.speedMin = 4.5
+--  zombie.speedMax = 9 + math.random(0,round.difficulty/2)
+--  zombie.speed = zombie.speedMin
+--  zombie.spawn = math.random(350,400)
+--  zombie.damage = 25
+--  zombie.sprite = zomAssets.bigZombieSprite
+--  zombie.frame = zomAssets.bigZombieFrame
+--  zombie.width = zombie.frame:getWidth()
+--  zombie.height = zombie.frame:getHeight()
+--  zombie.dead = false
+--  zombie.collideable = true
+--  zombie.zombieDamaged = false
+--  zombie.killReward = 60 + math.random(round.difficulty*2, round.difficulty*3)
+--  zombie.goldSpawn = 15
+--  zombie.health = 55 * (1+math.ceil(round.difficulty/2))
+--  zombie.grid = anim8.newGrid(30, 30, 256, 32, nil, nil, 2)
+--  zombie.animation = anim8.newAnimation(zombie.grid("1-8",1), 0.2)
+--  zombie.healthBar = {}
+--  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
   
-  zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
-  placeZombie(zombie, side)
+--  zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
+--  placeZombie(zombie, side)
   
-  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
-  table.insert(zombies, zombie)
-end
+--  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
+--  table.insert(zombies, zombie)
+--end
 
-function spawnSmallZombie()
-  local side = math.random(1,4)
-  local zombie = {}
-  zombie.isZombie = true
-  zombie.x = 0
-  zombie.y = 0
-  zombie.vx = 0
-  zombie.vy = 0
-  zombie.friction = 14
-  zombie.id = #zombies + 1
-  zombie.currentAngle = 0
-  zombie.rotSpeed = 0
-  zombie.hitRadius = 8
-  zombie.activeDist = 100
-  zombie.speedMin = 6 + math.random(0,round.difficulty/4)
-  zombie.speedMax = 16 + math.random(0,round.difficulty/4)
-  zombie.spawn = math.random(270,350)
-  zombie.speed = zombie.speedMin
-  zombie.damage = 10
-  zombie.sprite = zomAssets.smallZombieSprite
-  zombie.frame = zomAssets.smallZombieFrame
-  zombie.width = zombie.frame:getWidth()
-  zombie.height = zombie.frame:getHeight()
-  zombie.dead = false
-  zombie.collideable = true
-  zombie.zombieDamaged = false
-  zombie.killReward = 30 + math.random(round.difficulty*2, round.difficulty*3)
-  zombie.health = 14 * (1+math.ceil(round.difficulty/2))
-  zombie.goldSpawn = 5
-  zombie.grid = anim8.newGrid(13, 13, 128, 16, nil, nil, 3)
-  zombie.animation = anim8.newAnimation(zombie.grid("1-8",1), .08)
-  zombie.healthBar = {}
-  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
+--function spawnSmallZombie()
+--  local side = math.random(1,4)
+--  local zombie = {}
+--  zombie.isZombie = true
+--  zombie.x = 0
+--  zombie.y = 0
+--  zombie.vx = 0
+--  zombie.vy = 0
+--  zombie.friction = 14
+--  zombie.id = #zombies + 1
+--  zombie.currentAngle = 0
+--  zombie.rotSpeed = 0
+--  zombie.hitRadius = 8
+--  zombie.activeDist = 100
+--  zombie.speedMin = 6 + math.random(0,round.difficulty/4)
+--  zombie.speedMax = 16 + math.random(0,round.difficulty/4)
+--  zombie.spawn = math.random(270,350)
+--  zombie.speed = zombie.speedMin
+--  zombie.damage = 10
+--  zombie.sprite = zomAssets.smallZombieSprite
+--  zombie.frame = zomAssets.smallZombieFrame
+--  zombie.width = zombie.frame:getWidth()
+--  zombie.height = zombie.frame:getHeight()
+--  zombie.dead = false
+--  zombie.collideable = true
+--  zombie.zombieDamaged = false
+--  zombie.killReward = 30 + math.random(round.difficulty*2, round.difficulty*3)
+--  zombie.health = 14 * (1+math.ceil(round.difficulty/2))
+--  zombie.goldSpawn = 5
+--  zombie.grid = anim8.newGrid(13, 13, 128, 16, nil, nil, 3)
+--  zombie.animation = anim8.newAnimation(zombie.grid("1-8",1), .08)
+--  zombie.healthBar = {}
+--  table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
   
-  zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
-  placeZombie(zombie, side)
+--  zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
+--  placeZombie(zombie, side)
   
-  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
-  table.insert(zombies, zombie)
-end
-
-function placeZombie(z, s)
-  if s == 1 then
-    z.x = player.x - z.spawn
-    z.y = math.random(player.y - z.spawn, player.y + z.spawn)
-  elseif s == 2 then
-    z.x = math.random(player.x - z.spawn, player.x + z.spawn)
-    z.y = player.y - z.spawn
-  elseif s == 3 then
-    z.x = player.x + z.spawn
-    z.y = math.random(player.y + z.spawn, player.y - z.spawn)
-  elseif s == 4 then
-    z.x = math.random(player.x + z.spawn, player.x - z.spawn)
-    z.y = player.y + z.spawn
-  end
-end
+--  world:add(zombie, zombie.x - (zombie.width/2 * .8), zombie.y - (zombie.height/2 * .8), zombie.width * .8, zombie.height * .8)
+--  table.insert(zombies, zombie)
+--end
 
 function zombieUpdate(dt)
   if round.gameState == 2 then
     for i,z in ipairs(zombies) do
-      if z.currentAngle ~= zombie_angle_wrld(z) and distanceBetween(player.x, player.y, z.x, z.y) > 8 then
-        z.currentAngle = lerp(z.currentAngle,zombie_angle_wrld(z),1,z.rotSpeed*dt)
+      if z.currentAngle ~= zombie_angle_wrld(z) and distanceBetween(player.x, player.y, z.x, z.y) > z.rotActiveDist then
+        z.currentAngle = lerp(z.currentAngle, zombie_angle_wrld(z), 1, z.rotSpeed*dt)
       end
       
       zombieMoveHandler(z,dt)
+      healthBarUpdate(z.x, z.y, z.healthBar, z.healthBar.animation, z.health, z.healthBar.totalHealth)
       
-      if z.hitRadius ~= 15 and z.health < z.healthBar.totalHealth then
-        healthBarUpdate(z.x, z.y, z.healthBar, z.healthBar.animation, z.health, z.healthBar.totalHealth)
-      end
-      if z.hitRadius == 15 then
-        healthBarUpdate(z.x, z.y, z.healthBar, z.healthBar.animation, z.health, z.healthBar.totalHealth)
-        if z.health < z.healthBar.totalHealth then
-          z.health = z.health + (z.healthBar.totalHealth+round.difficulty*4)/1250
-        end
+      if z.regen and z.health < z.healthBar.totalHealth then
+        z.health = z.health + z.regen
       end
     end
   end
@@ -203,7 +201,22 @@ function zombieUpdate(dt)
       table.remove(zombies, i)
     end
   end
-  
+end
+
+function placeZombie(z, s)
+  if s == 1 then
+    z.x = player.x - z._spawn()
+    z.y = math.random(player.y - z._spawn(), player.y + z._spawn())
+  elseif s == 2 then
+    z.x = math.random(player.x - z._spawn(), player.x + z._spawn())
+    z.y = player.y - z._spawn()
+  elseif s == 3 then
+    z.x = player.x + z._spawn()
+    z.y = math.random(player.y + z._spawn(), player.y - z._spawn())
+  elseif s == 4 then
+    z.x = math.random(player.x + z._spawn(), player.x - z._spawn())
+    z.y = player.y + z._spawn()
+  end
 end
 
 function zombie_angle_wrld(enemy)
@@ -244,15 +257,7 @@ function zombieMoveHandler(zom,dt)
     zom.speed = zom.speed * (1 - dt)
   end
   
-  if zom.damage == 15 then
-    zom.rotSpeed = 19/zom.speed
-  end
-  if zom.damage == 25 then
-    zom.rotSpeed = 22/zom.speed
-  end
-  if zom.damage == 10 then
-    zom.rotSpeed = 34/zom.speed
-  end
+  zom.rotSpeed = zom.rotFactor/zom.speed
   
   zom.vx = zom.vx + math.cos(zom.currentAngle)*zom.speed
   zom.vy = zom.vy + math.sin(zom.currentAngle)*zom.speed

@@ -6,6 +6,9 @@ musicStarted = false
 function loadSoundFX()
   soundFX.lazer = love.audio.newSource('sounds/lazer2.mp3', 'static')
   soundFX.lazer2 = love.audio.newSource('sounds/lazer2.mp3', 'static')
+  soundFX.lazer3 = love.audio.newSource('sounds/lazer2.mp3', 'static')
+  soundFX.lazer4 = love.audio.newSource('sounds/lazer2.mp3', 'static')
+  soundFX.lazer5 = love.audio.newSource('sounds/lazer2.mp3', 'static')
   soundFX.reload = love.audio.newSource('sounds/reload.mp3', 'static')
   soundFX.move = love.audio.newSource('sounds/move.mp3', 'static')
   soundFX.makePurchase = love.audio.newSource('sounds/makePurchase.mp3', 'static')
@@ -44,8 +47,11 @@ function loadSoundFX()
   soundFX.pumpAction:setVolume(.1)
   soundFX.zoom:setVolume(.2)
   
-  soundFX.lazer:setVolume(.3)
-  soundFX.lazer2:setVolume(.2)
+  soundFX.lazer:setVolume(.4)
+  soundFX.lazer2:setVolume(.3)
+  soundFX.lazer3:setVolume(.2)
+  soundFX.lazer4:setVolume(.1)
+  soundFX.lazer5:setVolume(.1)
   soundFX.reload:setVolume(.3)
   soundFX.explosion:setVolume(.12)
   soundFX.move:setVolume(.4)
@@ -113,5 +119,53 @@ function gameMusic(dt)
   if round.gameState == 5 then
     if soundFX.music:getVolume() ~= 0 then soundFX.music:setVolume(0) end
     if soundFX.musicBoss:getVolume() ~= 0 then soundFX.musicBoss:setVolume(0) end
+  end
+end
+
+function calculateLazerAudio()
+  if soundFX.lazer:isPlaying() == true then
+    if soundFX.lazer2:isPlaying() == true then
+      love.audio.play(soundFX.lazer5)
+      
+      if soundFX.lazer3:isPlaying() == true then
+        
+        love.audio.play(soundFX.lazer5)
+        
+        if soundFX.lazer4:isPlaying() == true then
+          
+          love.audio.play(soundFX.lazer5)
+        else
+          love.audio.play(soundFX.lazer4)
+        end
+      else
+        love.audio.play(soundFX.lazer3)
+      end
+    else
+      love.audio.play(soundFX.lazer2)
+    end
+  else
+    love.audio.play(soundFX.lazer)
+  end
+end
+
+function calculateCoinAudio()
+  if soundFX.collectCoin.m1:isPlaying() == true then
+    if soundFX.collectCoin.m2:isPlaying() == true then
+      love.audio.play(soundFX.collectCoin.m5)
+      if soundFX.collectCoin.m3:isPlaying() == true then
+        love.audio.play(soundFX.collectCoin.m5)
+        if soundFX.collectCoin.m4:isPlaying() == true then
+          love.audio.play(soundFX.collectCoin.m5)
+        else
+          love.audio.play(soundFX.collectCoin.m4)
+        end
+      else
+        love.audio.play(soundFX.collectCoin.m3)
+      end
+    else
+      love.audio.play(soundFX.collectCoin.m2)
+    end
+  else
+    love.audio.play(soundFX.collectCoin.m1)
   end
 end

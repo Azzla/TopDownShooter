@@ -38,10 +38,15 @@ function spawnPowerup(index, zombie)
   
   if powerup.id == 2 then
     powerup.duration = 10
+    powerup.type = 'DAMAGE x2'
   elseif powerup.id == 3 then
     powerup.duration = 10
+    powerup.type = 'SPEED x2'
   elseif powerup.id == 4 then
     powerup.duration = 10
+    powerup.type = 'INVINCIBILITY'
+  else
+    powerup.type = 'HEALTH +'..tostring(healthUpHealth)
   end
   
   table.insert(powerupsActive, powerup)
@@ -53,7 +58,7 @@ function powerupChance(zombie)
   
   if random > 92 then
     --chances
-    local chances = {100,110,120,126} --health / damage / speed / invincibility
+    local chances = {100,200,300,400} --health / damage / speed / invincibility
     local total = chances[#chances] --value of last item in table
     local noPowerupChosen = true
     
@@ -121,6 +126,7 @@ function powerupUpdate(dt)
         end
         pow.collision = false
         activatePowerup(pow)
+        TextManager.genericPopup(player.x, player.y, pow.type)
       end
     end
     

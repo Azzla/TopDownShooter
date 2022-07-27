@@ -132,7 +132,7 @@ function collideWithBullet(b, z)
     if z.health <= 0 then
       z.collideable = false
       z.dead = true
-      local deathP = spawnDeathParticleSystem(z.x, z.y)
+      local deathP = spawnDeathParticleSystem(z.x, z.y, b.speed)
       spawnBloodParticles(deathP.pSystem, math.random(24,36), b.direction)
       
       round.totalKilled = round.totalKilled + 1

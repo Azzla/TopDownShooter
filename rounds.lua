@@ -22,7 +22,7 @@ roundTimer = globalTimer.new()
 
 roundTimer:every(round.time, function()
   if not round.isDespawning then
-    zombieSpawning()
+    doZombieSpawning()
   end
 end)
 
@@ -40,10 +40,13 @@ function updateRounds(dt)
       if not round.despawnText then
         round.despawnText = true
         TextManager.dropsDespawning(round.despawnTime)
+        --spawnPowerup(3, player)
+        player.v = player.v * 1.5
       end
       
       roundTimer:after(round.despawnTime, function()
         round.isDespawning = false
+        player.v = player.v / 1.5
         round.difficulty = round.difficulty + 1
         love.audio.play(soundFX.roundStart)
         round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
@@ -63,19 +66,6 @@ function updateRounds(dt)
       end
     end
   end
-  
---  for i,h in ipairs(healthbars) do
---    if h.isPlayer == true and h.health <= 0 then
---      round.gameState = 1
---      h.health = player.health
---      resetRounds()
---      resetShop()
---      round.gameState = 2
---    end
---    if h.health > player.health then
---      h.health = player.health
---    end
---  end
 end
 
 table.insert(KEYPRESSED, function(key, scancode)
@@ -93,6 +83,7 @@ table.insert(KEYPRESSED, function(key, scancode)
       round.gameState = 3
       love.audio.play(soundFX.collectCoin)
     elseif round.gameState == 3 then
+      resetShopButtons()
       round.gameState = 2
       soundFX.music:setVolume(.3)
     end
@@ -208,19 +199,23 @@ function resetRounds()
   round.bulletCount = 0
 end
   
-function zombieSpawning()
+function doZombieSpawning()
   if #zombies <= 200 and currentPrompt ~= prompts.wasd and currentPrompt ~= prompts.holdMouse then
+    
     if round.zombiesSpawned < round.zombiesMaxSpawn then
-      spawnZombie()
+      
+      spawnZombie(zombieTypes.normal)
       round.zombiesSpawned = round.zombiesSpawned + 1
-      if round.difficulty >= 10 and round.zombiesSpawned%6 == 0 then
-        spawnBigZombie()
-        round.zombiesSpawned = round.zombiesSpawned + 1
-      end
-      if round.difficulty >= 20 and round.zombiesSpawned%5 == 0 then
-        spawnSmallZombie()
-        round.zombiesSpawned = round.zombiesSpawned + 1
-      end
+      
+--      if round.difficulty >= 10 and round.zombiesSpawned%6 == 0 then
+--        spawnBigZombie()
+--        round.zombiesSpawned = round.zombiesSpawned + 1
+--      end
+--      if round.difficulty >= 20 and round.zombiesSpawned%5 == 0 then
+--        spawnSmallZombie()
+--        round.zombiesSpawned = round.zombiesSpawned + 1
+--      end
     end
+    
   end
 end

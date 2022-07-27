@@ -8,17 +8,17 @@ function spawnGrenade()
   grenade.isGrenade = true
   grenade.x = player.x
   grenade.y = player.y
-  grenade.v = 120
+  grenade.v = 150
   grenade.direction = player_angle()
   grenade.vx = math.cos(grenade.direction - math.pi/2) * grenade.v
   grenade.vy = math.sin(grenade.direction - math.pi/2) * grenade.v
   grenade.rotation = player_angle()
-  grenade.rotFactor = 3
+  grenade.rotFactor = 4
   grenade.sprite = grenadeSprite
   grenade.damage = 30
   grenade.dmgRadius = 60
   grenade.dead = false
-  grenade.time = 1
+  grenade.time = .8
   grenade.timer = grenadeTimer:new()
   
   grenade.explode = function()

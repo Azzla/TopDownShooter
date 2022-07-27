@@ -26,8 +26,9 @@ function drawPlayerParticles()
   
   love.graphics.draw(player.p.pSystem, player.x + handOffsetX, player.y + handOffsetY, nil, 1, 1)
   love.graphics.draw(player.dashP.pSystem, player.x, player.y, nil, 1, 1)
+  
   for i,d in pairs(deathParticles) do
-    love.graphics.draw(d.pSystem, d.x, d.y, nil, 5, 5)
+    love.graphics.draw(d.pSystem, d.x, d.y, nil, d.s, d.s)
   end
 end
 
@@ -52,10 +53,11 @@ function spawnDashParticles(pSys, numOfParticles)
   end
 end
 
-function spawnDeathParticleSystem(x, y)
+function spawnDeathParticleSystem(x, y, s)
   local pFX = {}
   pFX.x = x
   pFX.y = y
+  pFX.s = 3 + ((s - 250) / 100)
   pFX.pSystem = bloodSystem:clone()
   
   table.insert(deathParticles, pFX)

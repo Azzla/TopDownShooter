@@ -83,20 +83,30 @@ function love.update(dt)
       dashTimer:update(dt)
     end
   end
+  if round.gameState == 3 then
+    shopUpdate(dt)
+  end
 end
 
 function love.draw()
   if round.gameState == 4 then
-    mainMenu()
+    --------MENU--------
+    local ret1,ret2 = love.mouse:getPosition()
+    mainMenu(ret1,ret2)
+    
   elseif round.gameState == 6 then
-    helpScreen()
+    --------HELP--------
+    local ret1,ret2 = love.mouse:getPosition()
+    helpScreen(ret1,ret2)
+    
   elseif round.gameState == 2 then
-    resetShopButtons()
+    --------GAMEPLAY--------
     cam:zoomTo(currentZoom.zoom)
     cam:attach()
     
     --nighttime shader
     if round.difficulty >= 20 then drawNightShader() end
+    
     mainMap:drawLayer(mainMap.layers["Background"])
     love.graphics.setShader()
     
@@ -111,33 +121,28 @@ function love.draw()
     love.graphics.setShader()
     
     if round.difficulty >= 20 then drawNightShader() end
-    
     --Particles
     drawPlayerParticles()
     
-    -- Draw objects
-    drawEverything()
+    --Objects
+    drawObjects()
     
     --Game Text
     TextManager.drawGame()
 --    collisionDebug()
-    
+
     --Energy
     drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
     
-    ret1,ret2 = cam:mousePosition()
+    local ret1,ret2 = cam:mousePosition()
     love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
     
     love.graphics.setShader()
     
     cam:detach()
     cam:zoomTo(6)
-    
     --useful camera-translated coordinates
-    origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / 6)
-    originRight = origin + (screen_width / 6)
-    originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
+    local origin,origin2,origin2Bot,originRight,originXCenter,originYCenter = cameraCoordinates(cam, 6)
     
     cam:attach()
     --Health
@@ -156,7 +161,7 @@ function love.draw()
     love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
     
     --UI Text
-    TextManager.drawUI()
+    TextManager.drawUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter)
     
     --Round
     love.graphics.draw(round.uiBox, origin + 2, origin2 + 21)
@@ -167,70 +172,42 @@ function love.draw()
     cam:detach()
     cam:zoomTo(currentZoom.zoom)
   elseif round.gameState == 3 then
-    --shop
+    --------SHOP--------
     cam:zoomTo(6)
     cam:attach()
-    ret1,ret2 = cam:mousePosition()
+    local ret1,ret2 = cam:mousePosition()
     --useful camera-translated coordinates
-    origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / 6)
-    originRight = origin + (screen_width / 6)
-    originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
+    local origin,origin2,origin2Bot,originRight,originXCenter,originYCenter = cameraCoordinates(cam, 6)
     
     love.graphics.setShader(shopShader)
     mainMap:drawLayer(mainMap.layers["Background"])
     love.graphics.setShader()
     
-    --create buttons
-    if not shopButtonsCreated then
-      for i=1,#skills do
-        local fn = skills[i]
-        if i == 1 then
-          newShopButton(originXCenter - 90, originYCenter - 70, fn)
-        elseif i == 2 then
-          newShopButton(originXCenter - 90, originYCenter - 35, fn)
-        elseif i == 3 then
-          newShopButton(originXCenter - 90, originYCenter, fn)
-        elseif i == 4 then
-          newShopButton(originXCenter - 90, originYCenter + 35, fn)
-        elseif i == 5 then
-          newShopButton(originXCenter + 20, originYCenter - 70, fn)
-        elseif i == 6 then
-          newShopButton(originXCenter + 20, originYCenter + 35, fn)
-        end
-      end
-      
-      shopButtonsCreated = true
-    end
-    
-    displayShop()
+    displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
     
     cam:detach()
     cam:zoomTo(currentZoom.zoom)
   elseif round.gameState == 5 then
-    -- Pause screen
+    --------PAUSE--------
     cam:attach()
     --useful camera-translated coordinates
-    origin,origin2 = cam:worldCoords(0,0)
-    origin2Bot = origin2 + (screen_height / 6)
-    originRight = origin + (screen_width / 6)
-    originXCenter, originYCenter = cam:worldCoords(screen_width/2, screen_height/2)
+    local origin,origin2,origin2Bot,originRight,originXCenter,originYCenter = cameraCoordinates(cam, 6)
     
     love.graphics.setShader(pauseShader)
     mainMap:drawLayer(mainMap.layers["Background"])
-    drawEverything()
+    drawObjects()
     player.animation:draw(player.sprite, player.x, player.y, pausedAngle, 1, 1, player.frame:getWidth()/2, 1 + player.frame:getHeight()/2)
     love.graphics.setShader()
     
     love.graphics.printf("PAUSED", originXCenter - 130, originYCenter - 10, 999, "left", nil, 4, 4)
     
-    
-    
-    ret1,ret2 = cam:mousePosition()
+    local ret1,ret2 = cam:mousePosition()
     love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
     
     cam:detach()
+    cam:zoomTo(currentZoom.zoom)
   elseif round.gameState == 1 then
+    --------GAMEOVER--------
     gameOverScreen()
   end
 end
@@ -241,7 +218,16 @@ function love.keypressed(key, unicode)
   end
 end
 
-function drawEverything()
+function cameraCoordinates(c, scale)
+  local o,o2 = c:worldCoords(0,0)
+  local oB = o2 + (screen_height / scale)
+  local oR = o + (screen_width / scale)
+  local oXC, oYC = c:worldCoords(screen_width/2, screen_height/2)
+  
+  return o,o2,oB,oR,oXC,oYC
+end
+
+function drawObjects()
   drawZombies()
   for i,b in ipairs(bullets) do
     love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
@@ -260,6 +246,17 @@ function collisionDebug()
     love.graphics.rectangle('line', x,y,w,h)
   end
   love.graphics.setColor(1,1,1,1)
+end
+
+-------------------------
+--------UTILITIES--------
+-------------------------
+function shallowCopy(original)
+	local copy = {}
+	for key, value in pairs(original) do
+		copy[key] = value
+	end
+	return copy
 end
 
 function player_angle()

@@ -1,5 +1,5 @@
 gold = {}
-gold.total = 0
+gold.total = 10000
 gold.bigSprite = love.graphics.newImage('sprites/coinBig.png')
 coins = {}
 
@@ -111,27 +111,5 @@ function spawnKillReward(zombie)
   while zombie.killReward >= values.copper do
     spawnCoin(zombie, values.copper, copperSprite)
     zombie.killReward = zombie.killReward - values.copper
-  end
-end
-
-function calculateCoinAudio()
-  if soundFX.collectCoin.m1:isPlaying() == true then
-    if soundFX.collectCoin.m2:isPlaying() == true then
-      love.audio.play(soundFX.collectCoin.m5)
-      if soundFX.collectCoin.m3:isPlaying() == true then
-        love.audio.play(soundFX.collectCoin.m5)
-        if soundFX.collectCoin.m4:isPlaying() == true then
-          love.audio.play(soundFX.collectCoin.m5)
-        else
-          love.audio.play(soundFX.collectCoin.m4)
-        end
-      else
-        love.audio.play(soundFX.collectCoin.m3)
-      end
-    else
-      love.audio.play(soundFX.collectCoin.m2)
-    end
-  else
-    love.audio.play(soundFX.collectCoin.m1)
   end
 end
