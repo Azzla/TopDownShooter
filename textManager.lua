@@ -101,6 +101,24 @@ function TextManager.grenadeDmgPopup(g, z)
   })
 end
 
+function TextManager.collectCoinPopup(x, y, str)
+  gPopupManager:addPopup(
+  {
+      text = '+'..str,
+      font = pixelFont,
+      color = {r = 1, g = 1, b = 1, a = 1},
+      x = x,
+      y = y,
+      scaleX = .6,
+      scaleY = .6,
+      blendMode = 'add',
+      fadeOut = {start = .4, finish = .5},
+      dX = 0,
+      dY = -10,
+      duration = .5
+  })
+end
+
 function TextManager.genericPopup(x, y, str)
   gPopupManager:addPopup(
   {
@@ -148,6 +166,14 @@ function TextManager.dropsDespawning(time)
     Typo.kill(index)
     promptsRan.drops = false
   end)
+
+  return index
+end
+
+function TextManager.cancel(index)
+  TextManager.timer:clear()
+  Typo.kill(index)
+  promptsRan.drops = false
 end
 
 return TextManager

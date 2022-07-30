@@ -5,7 +5,7 @@ function love.load()
 --  love.window.setMode(1920, 1080)
   screen_width = love.graphics.getWidth()
   screen_height = love.graphics.getHeight()
-  love.window.setFullscreen(true, "desktop")
+--  love.window.setFullscreen(true, "desktop")
   
   --font
   pixelFont = love.graphics.newFont('sprites/Minecraft.ttf', 16)
@@ -19,6 +19,7 @@ function love.load()
   map_height = mainMap.height * mainMap.tileheight
   
   --libs
+  require('libs/slam')
   globalTimer = require('libs/hump/timer')
   tween = require('libs/tween/tween')
   anim8 = require('libs/anim8/anim8')
@@ -229,10 +230,7 @@ end
 
 function drawObjects()
   drawZombies()
-  for i,b in ipairs(bullets) do
-    love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
-  end
-    
+  drawBullets()
   drawCoins()
   drawPowerups()
   drawGrenades()

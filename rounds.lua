@@ -19,6 +19,7 @@ round.despawnText = false
 round.despawnTime = 7
 
 roundTimer = globalTimer.new()
+dropIndex = 0
 
 roundTimer:every(round.time, function()
   if not round.isDespawning then
@@ -39,17 +40,14 @@ function updateRounds(dt)
       
       if not round.despawnText then
         round.despawnText = true
-        TextManager.dropsDespawning(round.despawnTime)
-        --spawnPowerup(3, player)
+        dropIndex = TextManager.dropsDespawning(round.despawnTime)
         player.v = player.v * 1.5
       end
       
       roundTimer:after(round.despawnTime, function()
         round.isDespawning = false
         player.v = player.v / 1.5
-        round.difficulty = round.difficulty + 1
-        love.audio.play(soundFX.roundStart)
-        round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
+        love.audio.play(soundFX.collectCoin)
         
         for i=#coins,1,-1 do
           local c = coins[i]
@@ -59,6 +57,9 @@ function updateRounds(dt)
           local p = powerupsActive[i]
           p.dead = true
         end
+        
+        shopCooldown = true
+        round.gameState = 3
       end)
       
       if round.difficulty >= 10 and round.time ~= 9/round.difficulty then
@@ -78,15 +79,6 @@ table.insert(KEYPRESSED, function(key, scancode)
     end
   elseif key == "end" then
     love.event.quit()
-  elseif key == "lshift" then
-    if round.gameState == 2 then
-      round.gameState = 3
-      love.audio.play(soundFX.collectCoin)
-    elseif round.gameState == 3 then
-      resetShopButtons()
-      round.gameState = 2
-      soundFX.music:setVolume(.3)
-    end
   elseif key == 'space' then
     if round.gameState == 2 then
       if player.canDash == true then
@@ -113,6 +105,15 @@ table.insert(KEYPRESSED, function(key, scancode)
     end
   elseif key == "right" then
     if round.gameState == 2 then
+      if round.isDespawning then
+        TextManager.cancel(dropIndex)
+        
+        player.v = player.v / 1.5
+        round.difficulty = round.difficulty + 1
+        love.audio.play(soundFX.roundStart)
+        round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
+      end
+      
       --remove stuff
       for i=#zombies,1,-1 do
         local z = zombies[i]
@@ -145,18 +146,14 @@ table.insert(KEYPRESSED, function(key, scancode)
     end
   end
   
---  if key == '1' then
---    spawnZombie()
---  end
---  if key == '2' then
---    spawnBigZombie()
---  end
---  if key == '3' then
---    spawnSmallZombie()
---  end
-  
-  if round.gameState == 2 and canReload and key == 'r' then
-    reload()
+  if key == '7' then
+    spawnZombie(zombieTypes.normal)
+  end
+  if key == '8' then
+    spawnZombie(zombieTypes.big)
+  end
+  if key == '9' then
+    spawnZombie(zombieTypes.small)
   end
 end)
 

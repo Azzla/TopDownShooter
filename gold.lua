@@ -1,3 +1,5 @@
+local TextManager = require('textManager')
+
 gold = {}
 gold.total = 10000
 gold.bigSprite = love.graphics.newImage('sprites/coinBig.png')
@@ -32,8 +34,10 @@ function updateGold(dt)
         c.y = c.y + math.sin(zombie_angle_wrld(c)) * c.speed * dt
       elseif distanceBetween(c.x, c.y, player.x, player.y) < collectionDist then
         gold.total = gold.total + c.value
+        TextManager.collectCoinPopup(c.x, c.y, tostring(c.value))
+        
         c.collected = true
-        calculateCoinAudio()
+        love.audio.play(soundFX.collectCoin)
       end
     end
     

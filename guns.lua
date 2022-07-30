@@ -131,21 +131,14 @@ table.insert(KEYPRESSED, function(key, scancode)
     switchWeapon('uzi')
     love.audio.play(soundFX.cockPistol)
   end
+  
+  if round.gameState == 2 and canReload and key == 'r' then
+    reload()
+  end
 end)
 
 function processGunSounds()
-  if guns.equipped == guns.uzi then
-    calculateLazerAudio()
-  elseif guns.equipped.sound:isPlaying() == true then
-    if guns.equipped.sound == soundFX.lazer then
-      love.audio.play(soundFX.lazer2)
-    else
-      love.audio.stop(guns.equipped.sound)
-      love.audio.play(guns.equipped.sound)
-    end
-  else
-    love.audio.play(guns.equipped.sound)
-  end
+  love.audio.play(guns.equipped.sound)
   
   if guns.equipped == guns['shotgun'] then
     gunTimer:after(.2, function() love.audio.play(soundFX.pumpAction) end)

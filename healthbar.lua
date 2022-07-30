@@ -10,7 +10,7 @@ function spawnHealthBar(HP, x, y, zomHB)
   zomHB.grid = anim8.newGrid(12, 3, 132, 3)
   zomHB.animation = anim8.newAnimation(zomHB.grid("1-11", 1), 1)
   zomHB.isPlayer = false
-  zomHB.isHidden = false
+  zomHB.isHidden = true
   
   table.insert(healthbars, zomHB)
   

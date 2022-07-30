@@ -9,6 +9,12 @@ canReload = true
 canShoot = true
 coolingDown = false
 
+function drawBullets()
+  for i,b in ipairs(bullets) do
+    love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+  end
+end
+
 function autoShoot(dt)
   if guns.equipped == guns.uzi then
     if guns.equipped.currAmmo > 0 then
@@ -121,12 +127,13 @@ function collideWithBullet(b, z)
     spawnBloodParticles(z.p.pSystem, math.random(12,24), b.direction)
     
     z.zombieDamaged = true
+    z.healthBar.isHidden = false
     shaderTimer:after(.15, function() z.zombieDamaged = false end)
     
     z.health = z.health - b.damage
     z.id = b.id
     
-    if soundFX.zombies.hit:isPlaying() == true then love.audio.stop(soundFX.zombies.hit) end
+    love.audio.stop(soundFX.zombies.hit)
     love.audio.play(soundFX.zombies.hit)
 
     if z.health <= 0 then
@@ -180,7 +187,7 @@ function fireBullets()
 end
 
 function love.mousereleased(x, y, button)
-  if round.gameState == 2 then
+  if round.gameState == 2 and not shopCooldown then
     if button == 1 then
       if guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
         --check for cooldown
@@ -200,7 +207,7 @@ function love.mousereleased(x, y, button)
       end
     elseif button == 2 then
       if shop.skills.grenades >= 1 then
-        love.audio.play(soundFX.lazer2)
+        love.audio.play(soundFX.dash)
         spawnGrenade()
         shop.skills.grenades = shop.skills.grenades - 1
       end

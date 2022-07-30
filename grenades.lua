@@ -1,4 +1,5 @@
 grenades = {}
+explosions = {}
 
 grenadeSprite = love.graphics.newImage('sprites/grenade.png')
 grenadeTimer = globalTimer.new()
@@ -26,17 +27,18 @@ function spawnGrenade()
     grenade.dead = true
     screenShake(.15, 3)
     love.audio.play(soundFX.explosion)
+    spawnExplosion(grenade.x, grenade.y)
+    local p = spawnExplosionParticleSystem(grenade.x, grenade.y)
+    spawnExplosionParticles(p.pSystem, 100)
     
     for i,z in ipairs(zombies) do
       if distanceBetween(grenade.x, grenade.y, z.x, z.y) <= grenade.dmgRadius then
         TextManager.grenadeDmgPopup(grenade, z)
         spawnBloodParticles(z.p.pSystem, math.random(12,24), grenade_angle(grenade, z))
         z.zombieDamaged = true
+        z.healthBar.isHidden = false
         
         z.health = z.health - grenade.damage
-        if soundFX.zombies.hit:isPlaying() == true then
-          love.audio.stop(soundFX.zombies.hit)
-        end
         love.audio.play(soundFX.zombies.hit)
         
         if z.health <= 0 then
@@ -66,6 +68,9 @@ end
 function drawGrenades()
   for i,g in ipairs(grenades) do
     love.graphics.draw(g.sprite, g.x, g.y, g.rotation, 1, 1, grenadeSprite:getWidth()/2, grenadeSprite:getHeight()/2)
+  end
+  for i,e in ipairs(explosions) do
+    e.animation:draw(e.sprite, e.x, e.y, nil, 2, 2, 15.5, 15.5)
   end
 end
 
@@ -100,6 +105,9 @@ function grenadeUpdate(dt)
     
     g.rotation = g.rotation + math.pi * g.rotFactor * dt
   end
+  for i,e in ipairs(explosions) do
+    e.animation:update(dt)
+  end
 
   for i=#grenades,1,-1 do
     local g = grenades[i]
@@ -111,9 +119,16 @@ function grenadeUpdate(dt)
 
   for i=#grenades,1,-1 do
     local g = grenades[i]
-    if g.dead == true then
+    if g.dead then
       world:remove(g)
       table.remove(grenades, i)
+    end
+  end
+  
+  for i=#explosions,1,-1 do
+    local e = explosions[i]
+    if e.dead then
+      table.remove(explosions, i)
     end
   end
 end
@@ -123,13 +138,11 @@ function spawnExplosion(x,y)
   explosion.x = x
   explosion.y = y
   explosion.sprite = love.graphics.newImage('sprites/explosion.png')
-  explosion.grid = anim8.newGrid(16, 16, 128, 16)
-  explosion.animation = anim8.newAnimation(explosion.grid("1-8",1), 0.01, explosion.onLoop)
+  explosion.grid = anim8.newGrid(31, 31, 236, 31, -3, -3, 3)
+  explosion.animation = anim8.newAnimation(explosion.grid("1-7",1), 0.05, 'pauseAtEnd')
   explosion.dead = false
-  explosion.onLoop = function(anim, loops)
-    anim:destroy()
-    explosion.dead = true
-  end
-
+  
+  grenadeTimer:after(.35, function() explosion.dead = true end)
+  
   table.insert(explosions, explosion)
 end

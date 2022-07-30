@@ -1,22 +1,28 @@
 particles = {}
 deathParticles = {}
+explosionParticles = {}
 
-bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle1.png'), 100)
+local bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle1.png'), 100)
 bloodSystem:setParticleLifetime ( .05,.4 )
 bloodSystem:setSizes(1, .5, .25)
 bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
-bulletSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle2.png'), 100)
+local bulletSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle2.png'), 100)
 bulletSystem:setParticleLifetime (.05, .15)
 bulletSystem:setSizes(1)
 bulletSystem:setSpeed(120)
 bulletSystem:setColors(1, 1, 1, 1, rgb(183), rgb(231), rgb(246), 1)
 
-dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle2.png'), 100)
+local dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle2.png'), 100)
 dashSystem:setParticleLifetime (.05, .3)
 dashSystem:setSizes(1)
 dashSystem:setSpeed(60)
+
+local explosionSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pFX/particle3.png'), 1000)
+explosionSystem:setParticleLifetime (.05, .4)
+explosionSystem:setSizes(2, 1, 1.5, .5)
+explosionSystem:setSpeed(60,80)
 
 function drawPlayerParticles()
   local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
@@ -29,6 +35,30 @@ function drawPlayerParticles()
   
   for i,d in pairs(deathParticles) do
     love.graphics.draw(d.pSystem, d.x, d.y, nil, d.s, d.s)
+  end
+  for i,e in pairs(explosionParticles) do
+    love.graphics.draw(e.pSystem, e.x, e.y, nil, 2, 2)
+  end
+end
+
+function spawnExplosionParticleSystem(x,y)
+  local pFX = {}
+  pFX.x = x
+  pFX.y = y
+  pFX.pSystem = explosionSystem:clone()
+  
+  table.insert(explosionParticles, pFX)
+  return pFX
+end
+
+function spawnExplosionParticles(pSys, numOfParticles)
+  local direction = 0
+  local increment = (math.pi * 2) / numOfParticles
+  
+  for i = 1, numOfParticles do
+    pSys:setDirection(direction)
+    pSys:emit(3)
+    direction = direction + increment
   end
 end
 
@@ -120,6 +150,11 @@ function particleUpdate(dt)
   for i,d in ipairs(deathParticles) do
     if d.pSystem:isActive() == true then
       d.pSystem:update(dt)
+    end
+  end
+  for i,e in ipairs(explosionParticles) do
+    if e.pSystem:isActive() == true then
+      e.pSystem:update(dt)
     end
   end
 end

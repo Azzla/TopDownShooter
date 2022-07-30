@@ -3,16 +3,22 @@ local shopButtonManager = require('buttonManager')
 shop = {}
 local shopButtonsCreated = false
 local shopButtons = nil
+local shopTimer = globalTimer.new()
+local nextClicked = false
+shopCooldown = false
 
 shop.buttonSprite = love.graphics.newImage('sprites/shopButton.png')
 shop.buttonSpriteHot = love.graphics.newImage('sprites/shopButtonHot.png')
+shop.continue = love.graphics.newImage('sprites/UIBox1.png')
+shop.continueHover = love.graphics.newImage('sprites/UIBox1Hover.png')
+
 shop.display = love.graphics.newImage('sprites/UIShop.png')
 shop.textScale = 1/2
 shop.x = 0
 shop.y = 0
 shop.skills = {}
 shop.skills.price = 10
-shop.skills.grenades = 10
+shop.skills.grenades = 100
 shop.skills.damage = 6
 shop.skills.damPurch = 0
 shop.skills.speedPurch = 0
@@ -72,6 +78,7 @@ skills = {
 }
 
 function shopUpdate(dt)
+  shopTimer:update(dt)
   --Check if upgrades maxed out
   if not shopButtonsCreated then return end
   for i=1,#shopButtons do
@@ -81,6 +88,22 @@ function shopUpdate(dt)
       shopButtonManager.remove(i)
       shopButtons = shopButtonManager.getButtons()
     end
+  end
+end
+
+function nextRound()
+  if not nextClicked then
+    nextClicked = true
+    shopTimer:after(1, function()
+      shopCooldown = false
+      round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
+      resetShopButtons()
+      round.difficulty = round.difficulty + 1
+      round.gameState = 2
+      soundFX.music:setVolume(.3)
+      nextClicked = false
+    end)
+    love.audio.play(soundFX.roundStart)
   end
 end
 
@@ -105,6 +128,8 @@ function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originY
       elseif i == 6 then
         shopButtonManager.new(originXCenter + 20, originYCenter + 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
       end
+      
+      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, shop.continue, shop.continueHover)
     end
     shopButtons = shopButtonManager.getButtons()
     shopButtonsCreated = true
@@ -141,6 +166,9 @@ function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originY
   player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
   love.graphics.draw(player.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
   
+  --Continue Button
+  love.graphics.print("Next Round", originXCenter + 61, origin2Bot - 36.5, nil, shop.textScale, shop.textScale)
+  
   --Gold & Reticle
   love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
   love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
@@ -153,9 +181,9 @@ function resetShopButtons()
 end
 
 function purchase()
-  if soundFX.makePurchase:isPlaying() == true then
-    love.audio.stop(soundFX.makePurchase)
-  end
+--  if soundFX.makePurchase:isPlaying() == true then
+--    love.audio.stop(soundFX.makePurchase)
+--  end
   love.audio.play(soundFX.makePurchase)
   gold.total = gold.total - shop.skills.price
   shop.skills.price = shop.skills.price + 2

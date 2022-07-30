@@ -22,10 +22,6 @@ player.barSprite = love.graphics.newImage('sprites/healthbarUI.png')
 player.heartIcon = love.graphics.newImage('sprites/heartIcon.png')
 player.ammoIcon = love.graphics.newImage('sprites/energyIcon.png')
 player.canDash = true
-player.melee = {}
-player.melee.sprite = love.graphics.newImage('sprites/melee.png')
-player.melee.range = 10
-player.melee.damage = 20
 player.p = spawnBulletParticleSystem(player.x, player.y)
 player.dashP = spawnDashParticleSystem(player.x, player.y)
 player.isRecharge = true
@@ -52,7 +48,7 @@ function walkAnimation(dt)
   if round.gameState == 2 then
     if love.keyboard.isDown('w','a','s','d') then
       player.animation:update(dt)
-      love.audio.play(soundFX.move)
+      soundFX.move:resume()
     else
       player.animation:gotoFrame(1)
       love.audio.pause(soundFX.move)
@@ -138,6 +134,7 @@ function collideWithZombie(zom)
   round.currentKilled = round.currentKilled + 1
 end
 
+--TODO - im a trash programmer
 function addPurchasedHealth()
   player.health = player.health + 25
   if player.health > 100 then player.health = 100 end
