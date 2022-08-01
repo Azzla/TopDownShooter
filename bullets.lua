@@ -1,17 +1,31 @@
 local TextManager = require('textManager')
+local BulletParticleManager = require('particleManager')
 
 bullets = {}
+bloods = {}
 
 reloadTimer = globalTimer.new()
 cooldownTimer = globalTimer.new()
+bloodsplat = love.graphics.newImage('sprites/zombies/blood.png')
 
 canReload = true
 canShoot = true
 coolingDown = false
 
+local bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle1.png'), 100)
+bloodSystem:setParticleLifetime ( .05,.4 )
+bloodSystem:setSizes(1, .5, .25)
+bloodSystem:setSizeVariation ( .5 )
+bloodSystem:setSpeed(30, 50)
+
 function drawBullets()
   for i,b in ipairs(bullets) do
     love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+  end
+  for i,bl in ipairs(bloods) do
+    love.graphics.setColor(1,1,1,bl.alpha.a)
+    love.graphics.draw(bl.sprite, bl.x, bl.y, bl.dir, bl.s, bl.s, 9, 9)
+    love.graphics.setColor(1,1,1,1)
   end
 end
 
@@ -63,7 +77,7 @@ function spawnBullet(damageUp, dir, offsX, offsY)
     end)
   end
   
-  spawnBulletParticles(player.p.pSystem, math.random(6,12))
+  BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
   world:add(bullet, bullet.x, bullet.y, 2, 2)
   table.insert(bullets, bullet)
 end
@@ -118,13 +132,21 @@ function bulletUpdate(dt)
         table.remove(bullets, i)
       end
     end
+    
+    for i=#bloods,1,-1 do
+      local bl = bloods[i]
+      bl.tween:update(dt)
+      if bl.dead == true then
+        table.remove(bloods, i)
+      end
+    end
   end
 end
 
 function collideWithBullet(b, z)
   if b.id ~= z.id then
     TextManager.bulletDmgPopup(b, z)
-    spawnBloodParticles(z.p.pSystem, math.random(12,24), b.direction)
+    BulletParticleManager.spawn(z.p.psys, math.random(12,24), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
     
     z.zombieDamaged = true
     z.healthBar.isHidden = false
@@ -139,8 +161,11 @@ function collideWithBullet(b, z)
     if z.health <= 0 then
       z.collideable = false
       z.dead = true
-      local deathP = spawnDeathParticleSystem(z.x, z.y, b.speed)
-      spawnBloodParticles(deathP.pSystem, math.random(24,36), b.direction)
+      
+      --death effects
+      local deathP = BulletParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 3 + ((b.speed - 250) / 100), 3)
+      BulletParticleManager.spawn(deathP.psys, math.random(24,36), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
+      spawnBlood(z.x,z.y)
       
       round.totalKilled = round.totalKilled + 1
       round.currentKilled = round.currentKilled + 1
@@ -154,6 +179,22 @@ function collideWithBullet(b, z)
       b.damage = b.damage - 7
     end
   end
+end
+
+function spawnBlood(x,y)
+  local bl = {}
+  bl.sprite = bloodsplat
+  bl.alpha = { a = 1 }
+  bl.alphaT = { a = 0 }
+  bl.tween = tween.new(1.5, bl.alpha, bl.alphaT, "inExpo")
+  bl.dir = math.random(0, math.pi*2)
+  bl.x = x
+  bl.y = y
+  bl.s = .8
+  bl.dead = false
+  
+  table.insert(bloods, bl)
+  reloadTimer:after(1.5, function() bl.dead = true end)
 end
 
 function fireBullets()
@@ -197,7 +238,7 @@ function love.mousereleased(x, y, button)
         end
         
         processGunSounds()
-        spawnBulletParticles(player.p.pSystem, math.random(6,12), player.damageUp)
+        BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
         guns.equipped.currAmmo = guns.equipped.currAmmo - 1
         fireBullets()
         

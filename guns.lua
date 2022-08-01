@@ -75,7 +75,7 @@ guns.shotgun.dmg = 7 + guns.shotgun.upgrades.dmg
 guns.shotgun.v = 350 + guns.shotgun.upgrades.v
 guns.shotgun.currAmmo = 8
 guns.shotgun.clipSize = 8 + guns.shotgun.upgrades.clipSize
-guns.shotgun.bullets = 6 + guns.shotgun.upgrades.bullets
+guns.shotgun.bullets = 7 + guns.shotgun.upgrades.bullets
 guns.shotgun.reload = 3 * guns.shotgun.upgrades.reload
 guns.shotgun.cooldown = .8
 guns.shotgun.pierce = 0
@@ -99,7 +99,7 @@ guns.uzi.offsX = -4
 guns.uzi.offsY = 10
 guns.uzi.bulletOffsX = 6
 guns.uzi.bulletOffsY = -8
-guns.uzi.dmg = 2.5 + guns.uzi.upgrades.dmg
+guns.uzi.dmg = .1 --2.5 + guns.uzi.upgrades.dmg
 guns.uzi.v = 300 + guns.uzi.upgrades.v
 guns.uzi.currAmmo = 64
 guns.uzi.clipSize = 64 + guns.uzi.upgrades.clipSize
@@ -116,18 +116,26 @@ gunTimer = globalTimer.new()
 table.insert(KEYPRESSED, function(key, scancode)
   if key == '1' then
     if not canReload and guns.equipped == guns.pistol then return end
+    if guns.equipped == guns.pistol then return end
+    
     switchWeapon('pistol')
     love.audio.play(soundFX.cockPistol)
   elseif key == '2' and guns.sniper.unlocked then
     if not canReload and guns.equipped == guns.sniper then return end
+    if guns.equipped == guns.sniper then return end
+    
     switchWeapon('sniper')
     love.audio.play(soundFX.zoom)
   elseif key == '3' and guns.shotgun.unlocked then
     if not canReload and guns.equipped == guns.shotgun then return end
+    if guns.equipped == guns.shotgun then return end
+    
     switchWeapon('shotgun')
     love.audio.play(soundFX.pumpAction)
   elseif key == '4' and guns.uzi.unlocked then
     if not canReload and guns.equipped == guns.uzi then return end
+    if guns.equipped == guns.uzi then return end
+    
     switchWeapon('uzi')
     love.audio.play(soundFX.cockPistol)
   end

@@ -1,22 +1,35 @@
+local GrenadeParticleManager = require('particleManager')
+
 grenades = {}
 explosions = {}
 
 grenadeSprite = love.graphics.newImage('sprites/grenade.png')
 grenadeTimer = globalTimer.new()
 
+local bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle1.png'), 100)
+bloodSystem:setParticleLifetime ( .05,.4 )
+bloodSystem:setSizes(1, .5, .25)
+bloodSystem:setSizeVariation ( .5 )
+bloodSystem:setSpeed(30, 50)
+
+local explosionSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle3.png'), 1000)
+explosionSystem:setParticleLifetime (.05, .4)
+explosionSystem:setSizes(2, 1, 1.5, .5)
+explosionSystem:setSpeed(60,80)
+
 function spawnGrenade()
   local grenade = {}
   grenade.isGrenade = true
   grenade.x = player.x
   grenade.y = player.y
-  grenade.v = 150
+  grenade.v = 100
   grenade.direction = player_angle()
   grenade.vx = math.cos(grenade.direction - math.pi/2) * grenade.v
   grenade.vy = math.sin(grenade.direction - math.pi/2) * grenade.v
   grenade.rotation = player_angle()
   grenade.rotFactor = 4
   grenade.sprite = grenadeSprite
-  grenade.damage = 30
+  grenade.damage = 45
   grenade.dmgRadius = 60
   grenade.dead = false
   grenade.time = .8
@@ -28,17 +41,18 @@ function spawnGrenade()
     screenShake(.15, 3)
     love.audio.play(soundFX.explosion)
     spawnExplosion(grenade.x, grenade.y)
-    local p = spawnExplosionParticleSystem(grenade.x, grenade.y)
-    spawnExplosionParticles(p.pSystem, 100)
+    local p = GrenadeParticleManager.tempNew(grenade.x, grenade.y, explosionSystem:clone(), 2, 2)
+    GrenadeParticleManager.spawn(p.psys, 100, 0, math.pi * 2, 3)
     
     for i,z in ipairs(zombies) do
       if distanceBetween(grenade.x, grenade.y, z.x, z.y) <= grenade.dmgRadius then
         TextManager.grenadeDmgPopup(grenade, z)
-        spawnBloodParticles(z.p.pSystem, math.random(12,24), grenade_angle(grenade, z))
+        GrenadeParticleManager.spawn(z.p.psys, math.random(12,24), grenade_angle(grenade, z) - math.pi/2 - math.pi/8, math.pi/4, 3)
+        
         z.zombieDamaged = true
         z.healthBar.isHidden = false
-        
         z.health = z.health - grenade.damage
+        love.audio.stop(soundFX.zombies.hit)
         love.audio.play(soundFX.zombies.hit)
         
         if z.health <= 0 then
@@ -47,6 +61,11 @@ function spawnGrenade()
           round.currentKilled = round.currentKilled + 1
           spawnKillReward(z)
           powerupChance(z)
+          
+          local deathP = GrenadeParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 3 + ((grenade.v * 5 - 250) / 100), 3)
+          GrenadeParticleManager.spawn(deathP.psys, math.random(24,36), grenade_angle(grenade, z) - math.pi/2 - math.pi/8, math.pi/4, 3)
+          
+          spawnBlood(z.x,z.y)
         end
       end
     end
@@ -66,6 +85,7 @@ local grenadeFilter = function(item, other)
 end
 
 function drawGrenades()
+  GrenadeParticleManager.drawAll()
   for i,g in ipairs(grenades) do
     love.graphics.draw(g.sprite, g.x, g.y, g.rotation, 1, 1, grenadeSprite:getWidth()/2, grenadeSprite:getHeight()/2)
   end
@@ -76,6 +96,8 @@ end
 
 function grenadeUpdate(dt)
   grenadeTimer:update(dt)
+  GrenadeParticleManager.updateAll(dt)
+  
   for i,g in ipairs(grenades) do
     g.timer:update(dt)
     

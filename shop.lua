@@ -1,18 +1,19 @@
 local shopButtonManager = require('buttonManager')
 
 shop = {}
+shop.currentScreen = 1 --general tab 
 local shopButtonsCreated = false
 local shopButtons = nil
 local shopTimer = globalTimer.new()
 local nextClicked = false
 shopCooldown = false
 
-shop.buttonSprite = love.graphics.newImage('sprites/shopButton.png')
-shop.buttonSpriteHot = love.graphics.newImage('sprites/shopButtonHot.png')
-shop.continue = love.graphics.newImage('sprites/UIBox1.png')
-shop.continueHover = love.graphics.newImage('sprites/UIBox1Hover.png')
+shop.buttonSprite = love.graphics.newImage('sprites/ui/shopButton.png')
+shop.buttonSpriteHot = love.graphics.newImage('sprites/ui/shopButtonHot.png')
+shop.continue = love.graphics.newImage('sprites/ui/UIBox1.png')
+shop.continueHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
 
-shop.display = love.graphics.newImage('sprites/UIShop.png')
+shop.display = love.graphics.newImage('sprites/ui/UIShop.png')
 shop.textScale = 1/2
 shop.x = 0
 shop.y = 0
@@ -94,7 +95,7 @@ end
 function nextRound()
   if not nextClicked then
     nextClicked = true
-    shopTimer:after(1, function()
+    shopTimer:after(.1, function()
       shopCooldown = false
       round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
       resetShopButtons()
@@ -107,10 +108,11 @@ function nextRound()
   end
 end
 
-function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
-  love.graphics.draw(shop.display, originXCenter, originYCenter, nil, 1, 1, shop.display:getWidth()/2, shop.display:getHeight()/2)
-  love.graphics.print("Current Price: "..shop.skills.price, originXCenter - 110, origin2Bot - 17)
+function generalTab()
   
+end
+
+function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
   --create buttons -- TODO: this code sucks dick balls
   if not shopButtonsCreated then
     for i=1,#skills do
@@ -130,41 +132,52 @@ function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originY
       end
       
       shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, shop.continue, shop.continueHover)
+      
+      shopButtonManager.new(origin + 50, origin2 + 45, generalTab, shop.continue, shop.continueHover)
+      shopButtonManager.new(origin + 50, origin2 + 58, pistolTab, shop.continue, shop.continueHover)
+      shopButtonManager.new(origin + 50, origin2 + 71, shotgunTab, shop.continue, shop.continueHover)
+      shopButtonManager.new(origin + 50, origin2 + 84, sniperTab, shop.continue, shop.continueHover)
+      shopButtonManager.new(origin + 50, origin2 + 97, uziTab, shop.continue, shop.continueHover)
     end
     shopButtons = shopButtonManager.getButtons()
     shopButtonsCreated = true
   end
   
-  shopButtonManager.draw(ret1, ret2)
+  love.graphics.draw(shop.display, originXCenter, originYCenter, nil, 1, 1, shop.display:getWidth()/2, shop.display:getHeight()/2)
+  love.graphics.print("Current Price: "..shop.skills.price, originXCenter - 110, origin2Bot - 17)
   
-  --Stats
-  love.graphics.printf(shop.skills.damPurch, originXCenter - 145, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
-  love.graphics.printf(shop.skills.speedPurch, originXCenter - 145, originYCenter - 35, 100, "right", nil, shop.textScale, shop.textScale)
-  love.graphics.printf(shop.skills.ratePurch, originXCenter - 145, originYCenter, 100, "right", nil, shop.textScale, shop.textScale)
-  love.graphics.printf(shop.skills.magPurch, originXCenter - 145, originYCenter + 35, 100, "right", nil, shop.textScale, shop.textScale)
+  if shop.currentScreen == 1 then
+    shopButtonManager.draw(ret1, ret2)
   
-  love.graphics.print("Damage ( +2 )", originXCenter - 75, originYCenter - 68, nil, shop.textScale, shop.textScale)
-  love.graphics.print("Speed ( +10 )", originXCenter - 75, originYCenter - 33, nil, shop.textScale, shop.textScale)
-  love.graphics.print("Reload ( -2% )", originXCenter - 75, originYCenter + 2, nil, shop.textScale, shop.textScale)
-  love.graphics.print("Magnet ( +10% )", originXCenter - 75, originYCenter + 37, nil, shop.textScale, shop.textScale)
-  
-  love.graphics.print("Current: ".. shop.skills.damage, originXCenter - 75, originYCenter - 58, nil, 1/3, 1/3)
-  love.graphics.print("Current: ".. math.floor(shop.skills.speed + player.v), originXCenter - 75, originYCenter - 23, nil, 1/3, 1/3)
-  love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.reload)).. "s", originXCenter - 75, originYCenter + 12, nil, 1/3, 1/3)
-  love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.magnet)).. "x Multiplier", originXCenter - 75, originYCenter + 47, nil, 1/3, 1/3)
-  
-  --Stats Row 2
-  love.graphics.printf(shop.skills.ammoPurch, originXCenter - 35, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
-  love.graphics.print("Max Ammo ( +2 )", originXCenter + 35, originYCenter - 68, nil, shop.textScale, shop.textScale)
-  love.graphics.print("Current: ".. shop.skills.maxAmmo, originXCenter + 35, originYCenter - 58, nil, 1/3, 1/3)
-  
-  --Current Health Display
-  love.graphics.print("Health ( +25 )", originXCenter + 35, originYCenter + 37, nil, shop.textScale, shop.textScale)
-  love.graphics.print("Current: " .. player.health, originXCenter + 30, originYCenter + 58, nil, 1/3, 1/3)
-  love.graphics.print("Max: 100", originXCenter + 65, originYCenter + 58, nil, 1/3, 1/3)
-  love.graphics.draw(round.uiBox3, originXCenter + 30, originYCenter + 47, nil)
-  player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
-  love.graphics.draw(player.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
+    --Stats
+    love.graphics.printf(shop.skills.damPurch, originXCenter - 145, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
+    love.graphics.printf(shop.skills.speedPurch, originXCenter - 145, originYCenter - 35, 100, "right", nil, shop.textScale, shop.textScale)
+    love.graphics.printf(shop.skills.ratePurch, originXCenter - 145, originYCenter, 100, "right", nil, shop.textScale, shop.textScale)
+    love.graphics.printf(shop.skills.magPurch, originXCenter - 145, originYCenter + 35, 100, "right", nil, shop.textScale, shop.textScale)
+    
+    love.graphics.print("Damage ( +2 )", originXCenter - 75, originYCenter - 68, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Speed ( +10 )", originXCenter - 75, originYCenter - 33, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Reload ( -2% )", originXCenter - 75, originYCenter + 2, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Magnet ( +10% )", originXCenter - 75, originYCenter + 37, nil, shop.textScale, shop.textScale)
+    
+    love.graphics.print("Current: ".. shop.skills.damage, originXCenter - 75, originYCenter - 58, nil, 1/3, 1/3)
+    love.graphics.print("Current: ".. math.floor(shop.skills.speed + player.v), originXCenter - 75, originYCenter - 23, nil, 1/3, 1/3)
+    love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.reload)).. "s", originXCenter - 75, originYCenter + 12, nil, 1/3, 1/3)
+    love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.magnet)).. "x Multiplier", originXCenter - 75, originYCenter + 47, nil, 1/3, 1/3)
+    
+    --Stats Row 2
+    love.graphics.printf(shop.skills.ammoPurch, originXCenter - 35, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
+    love.graphics.print("Max Ammo ( +2 )", originXCenter + 35, originYCenter - 68, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Current: ".. shop.skills.maxAmmo, originXCenter + 35, originYCenter - 58, nil, 1/3, 1/3)
+    
+    --Current Health Display
+    love.graphics.print("Health ( +25 )", originXCenter + 35, originYCenter + 37, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Current: " .. player.health, originXCenter + 30, originYCenter + 58, nil, 1/3, 1/3)
+    love.graphics.print("Max: 100", originXCenter + 65, originYCenter + 58, nil, 1/3, 1/3)
+    love.graphics.draw(round.uiBox3, originXCenter + 30, originYCenter + 47, nil)
+    player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
+    love.graphics.draw(player.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
+  end
   
   --Continue Button
   love.graphics.print("Next Round", originXCenter + 61, origin2Bot - 36.5, nil, shop.textScale, shop.textScale)
@@ -181,9 +194,7 @@ function resetShopButtons()
 end
 
 function purchase()
---  if soundFX.makePurchase:isPlaying() == true then
---    love.audio.stop(soundFX.makePurchase)
---  end
+  love.audio.stop(soundFX.makePurchase)
   love.audio.play(soundFX.makePurchase)
   gold.total = gold.total - shop.skills.price
   shop.skills.price = shop.skills.price + 2

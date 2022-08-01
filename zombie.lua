@@ -1,3 +1,5 @@
+local ZombieParticleManager = require('particleManager')
+
 zombies = {}
 local zomAssets = {}
 zomAssets.zombieFrame = love.graphics.newImage('sprites/zombies/zombie.png')
@@ -8,6 +10,12 @@ zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWal
 
 zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
 zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
+
+local bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle1.png'), 100)
+bloodSystem:setParticleLifetime ( .05,.4 )
+bloodSystem:setSizes(1, .5, .25)
+bloodSystem:setSizeVariation ( .5 )
+bloodSystem:setSpeed(30, 50)
 
 --------ZOMBIE TYPES--------
 zombieTypes = {}
@@ -103,7 +111,7 @@ zombieTypes.small = {
 
 function drawZombies()
   for i,z in ipairs(zombies) do
-    love.graphics.draw(z.p.pSystem, z.x, z.y, nil, z.pScale, z.pScale)
+    ZombieParticleManager.draw(z.p.psys, z.x, z.y, z.p.s)
     
     z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.oX, z.oY)
     if z.healthBar.isHidden == false then
@@ -143,7 +151,7 @@ function spawnZombie(zombieType)
   --animations/particles
   zombie.grid = anim8.newGrid(zombie.frameSize, zombie.frameSize, zombie.sprite:getWidth(), zombie.sprite:getHeight(), nil, nil, zombie.spriteGap)
   zombie.animation = anim8.newAnimation(zombie.grid("1-8", 1), zombie.frameTime)
-  zombie.p = spawnBloodParticleSystem(zombie.x, zombie.y)
+  zombie.p = ZombieParticleManager.new(zombie.x, zombie.y, bloodSystem:clone(), zombie.pScale)
   
   placeZombie(zombie, side)
   world:add(zombie, zombie.x - (zombie.oX * zombie.collScale), zombie.y - (zombie.oY * zombie.collScale), zombie.width * zombie.collScale, zombie.height * zombie.collScale)
@@ -155,6 +163,8 @@ end
 function zombieUpdate(dt)
   if round.gameState == 2 then
     for i,z in ipairs(zombies) do
+      ZombieParticleManager.update(z.p.psys, dt)
+      
       if z.currentAngle ~= zombie_angle_wrld(z) and distanceBetween(player.x, player.y, z.x, z.y) > z.rotActiveDist then
         z.currentAngle = lerp(z.currentAngle, zombie_angle_wrld(z), 1, z.rotSpeed*dt)
       end
@@ -179,6 +189,7 @@ function zombieUpdate(dt)
       world:remove(z)
       table.remove(zombies, i)
       
+      love.audio.stop(soundFX.zombies.death)
       love.audio.play(soundFX.zombies.death)
     end
   end

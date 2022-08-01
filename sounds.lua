@@ -43,7 +43,7 @@ function loadSoundFX()
   soundFX.explosion:setVolume(.12)
   soundFX.move:setVolume(.4)
   soundFX.dash:setVolume(.4)
-  soundFX.zombies.death:setVolume(.6)
+  soundFX.zombies.death:setVolume(1)
   soundFX.zombies.hit:setVolume(.6)
   soundFX.makePurchase:setVolume(.8)
   soundFX.roundStart:setVolume(.7)
@@ -60,7 +60,7 @@ function loadSoundFX()
 end
 
 function playMusic()
-  love.audio.play(soundFX.music)
+--  love.audio.play(soundFX.musicBoss)
 end
 
 function gameMusic(dt)

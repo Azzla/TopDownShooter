@@ -8,15 +8,17 @@ function love.load()
 --  love.window.setFullscreen(true, "desktop")
   
   --font
-  pixelFont = love.graphics.newFont('sprites/Minecraft.ttf', 16)
+  pixelFont = love.graphics.newFont('fonts/Minecraft.ttf', 16)
   love.graphics.setFont(pixelFont)
   pixelFont:setFilter( "nearest", "nearest" )
   
   --map
   sti = require('libs/SimpleTI/sti')
-  mainMap = sti('sprites/mainMapV2.lua')
+  mainMap = sti('sprites/map/mainMapV2.lua')
   map_width = mainMap.width * mainMap.tilewidth
   map_height = mainMap.height * mainMap.tileheight
+  
+  gameOverGraphic = love.graphics.newImage('sprites/ui/gameOver.png')
   
   --libs
   require('libs/slam')
@@ -34,7 +36,6 @@ function love.load()
   loadSoundFX()
   require('menu')
   require('prompts')
-  require('particles')
   require('guns')
   require('player')
   require('zombie')
@@ -46,7 +47,6 @@ function love.load()
   require('gold')
   require('gameCam')
   require('energy')
-  require('gameOver')
   require('powerups')
   
   spawnPlayerHealthBar()
@@ -76,7 +76,6 @@ function love.update(dt)
     updateRounds(dt)
     updateGold(dt)
     energyUpdate(dt)
-    particleUpdate(dt)
     powerupUpdate(dt)
     roundTimer:update(dt)
     mainMap:update(dt)
@@ -111,25 +110,29 @@ function love.draw()
     mainMap:drawLayer(mainMap.layers["Background"])
     love.graphics.setShader()
     
+    --Objects
+    drawObjects()
     drawGuns()
+    
+    --Player
     if shaders.damaged then love.graphics.setShader(damagedShader) end
+    
     if player.isInvincible then
       drawInvincibilityShader()
       love.graphics.setShader(invincibilityShader)
     end
-    player.animation:draw(player.sprite, player.x, player.y, player_angle(), 1, 1, player.frame:getWidth()/2, 1 + player.frame:getHeight()/2)
+    
+    drawPlayer()
     pausedAngle = player_angle()
+    
     love.graphics.setShader()
     
+    --Nighttime
     if round.difficulty >= 20 then drawNightShader() end
-    --Particles
-    drawPlayerParticles()
     
-    --Objects
-    drawObjects()
-    
-    --Game Text
+    --In-Game Text
     TextManager.drawGame()
+    
 --    collisionDebug()
 
     --Energy
@@ -211,6 +214,10 @@ function love.draw()
     --------GAMEOVER--------
     gameOverScreen()
   end
+end
+
+function gameOverScreen()
+  love.graphics.draw(gameOverGraphic, 0, 0, nil, love.graphics.getWidth() / gameOver.graphic:getWidth(), love.graphics.getHeight() / gameOver.graphic:getHeight())
 end
 
 function love.keypressed(key, unicode)

@@ -1,9 +1,9 @@
 local menuButtonManager = require('buttonManager')
 
 menu = {}
-menu.background = love.graphics.newImage('sprites/mainMenu.png')
-menu.button = love.graphics.newImage('sprites/UIBox1.png')
-menu.buttonHover = love.graphics.newImage('sprites/UIBox1Hover.png')
+menu.background = love.graphics.newImage('sprites/ui/mainMenu.png')
+menu.button = love.graphics.newImage('sprites/ui/UIBox1.png')
+menu.buttonHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
 menu.buttonScale = 8
 
 local menuBtnsDrawn = false
@@ -30,7 +30,7 @@ function mainMenu(ret1, ret2)
     menuButtonManager.clear()
     for i=1,#menuBtnFunctions do
       menuButtonManager.new(32, screen_height - (128 * i), menuBtnFunctions[#menuBtnFunctions + 1 - i],
-      menu.button, menu.buttonHover, menu.buttonScale, soundFX.collectCoin.m1)
+      menu.button, menu.buttonHover, menu.buttonScale, soundFX.collectCoin)
     end
     menuBtnsDrawn = true
   end
@@ -49,7 +49,7 @@ function helpScreen(ret1, ret2)
   menuBtnsDrawn = false
   
   love.graphics.draw(menu.background, 0, 0, nil, screen_width / menu.background:getWidth(), screen_height / menu.background:getHeight())
-  love.graphics.draw(love.graphics.newImage('sprites/UIShop.png'), screen_width / 2, screen_height / 2, nil, 6, 6, 112, 78)
+  love.graphics.draw(love.graphics.newImage('sprites/ui/UIShop.png'), screen_width / 2, screen_height / 2, nil, 6, 6, 112, 78)
   --tips
   love.graphics.print("Movement: WASD", screen_width / 2 - 600, screen_height / 2 - 300, nil, 3, 3)
   love.graphics.print("Shoot: Mouse1", screen_width / 2 - 600, screen_height / 2 - 200, nil, 3, 3)
@@ -62,7 +62,7 @@ function helpScreen(ret1, ret2)
   if not backBtnDrawn then
     menuButtonManager.clear()
     menuButtonManager.new(32, screen_height - 128,function() round.gameState = 4 end,
-    menu.button, menu.buttonHover, menu.buttonScale, soundFX.collectCoin.m1)
+    menu.button, menu.buttonHover, menu.buttonScale, soundFX.collectCoin)
   
     backBtnDrawn = true
   end

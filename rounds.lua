@@ -7,16 +7,16 @@ round.gameState = 4
 round.time = 1
 round.next = false
 round.zombiesSpawned = 0
-round.zombiesMaxSpawn = 1
+round.zombiesMaxSpawn = 10
 round.totalKilled = 0
 round.currentKilled = 0
-round.uiBox = love.graphics.newImage('sprites/UIBox1.png')
-round.uiBox2 = love.graphics.newImage('sprites/UIBox2.png')
-round.uiBox3 = love.graphics.newImage('sprites/UIBox3.png')
+round.uiBox = love.graphics.newImage('sprites/ui/UIBox1.png')
+round.uiBox2 = love.graphics.newImage('sprites/ui/UIBox2.png')
+round.uiBox3 = love.graphics.newImage('sprites/ui/UIBox3.png')
 round.bulletCount = 0
 round.isDespawning = false
 round.despawnText = false
-round.despawnTime = 7
+round.despawnTime = 6
 
 roundTimer = globalTimer.new()
 dropIndex = 0
@@ -44,7 +44,7 @@ function updateRounds(dt)
         player.v = player.v * 1.5
       end
       
-      roundTimer:after(round.despawnTime, function()
+      roundTimer:after(round.despawnTime + .1, function()
         round.isDespawning = false
         player.v = player.v / 1.5
         love.audio.play(soundFX.collectCoin)
@@ -79,30 +79,6 @@ table.insert(KEYPRESSED, function(key, scancode)
     end
   elseif key == "end" then
     love.event.quit()
-  elseif key == 'space' then
-    if round.gameState == 2 then
-      if player.canDash == true then
-        
-        love.audio.play(soundFX.dash)
-        spawnDashParticles(player.dashP.pSystem, math.random(12,24))
-        player.canDash = false
-        player.isRecharge = false
-        
-        if love.keyboard.isDown("a") then
-          player.vx = player.vx - (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("d") then
-          player.vx = player.vx + (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("w") then
-          player.vy = player.vy - (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("s") then
-          player.vy = player.vy + (player.v+shop.skills.speed)/2
-        end
-        dashTween:reset()
-      end
-    end
   elseif key == "right" then
     if round.gameState == 2 then
       if round.isDespawning then

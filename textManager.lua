@@ -89,11 +89,12 @@ function TextManager.grenadeDmgPopup(g, z)
   {
       text = tostring(g.damage),
       font = pixelFont,
-      color = {r = .6, g = .1, b = 0, a = 1},
+      color = {r = .8, g = .1, b = 0, a = 1},
       x = z.x + math.random(-10,10),
       y = z.y,
       scaleX = .5,
       scaleY = .5,
+      blendMode = 'add',
       fadeOut = {start = .5, finish = .7},
       dX = math.random(-5,5),
       dY = -20,
