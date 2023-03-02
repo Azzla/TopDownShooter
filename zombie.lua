@@ -1,119 +1,23 @@
 local ZombieParticleManager = require('particleManager')
+local zombieTypes = require('dicts/zombsDict')
 
 zombies = {}
-local zomAssets = {}
-zomAssets.zombieFrame = love.graphics.newImage('sprites/zombies/zombie.png')
-zomAssets.zombieSprite = love.graphics.newImage('sprites/zombies/zombieWalk.png')
 
-zomAssets.bigZombieFrame = love.graphics.newImage('sprites/zombies/zombieBig.png')
-zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWalk.png')
-
-zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
-zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
-
+--blood particles
 local bloodSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle1.png'), 100)
 bloodSystem:setParticleLifetime ( .05,.4 )
 bloodSystem:setSizes(1, .5, .25)
 bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
---------ZOMBIE TYPES--------
-zombieTypes = {}
-zombieTypes.normal = {
-  damage        = 15,
-  hbScaleX      = 1,
-  hbScaleY      = 1,
-  hbOffsX       = 6,
-  hbOffsY       = -5,
-  pScale        = 3,
-  friction      = 12,
-  rotFactor     = 19,
-  rotActiveDist = 8,
-  collScale     = .8,
-  activeDist    = 90,
-  goldSpawn     = 8,
-  frameTime     = .12,
-  frameSize     = 15,
-  spriteGap     = 1,
-  
-  _health = function() return 14 * (1+math.ceil(round.difficulty/3)) end,
-  _killReward = function() return 5 + math.random(round.difficulty, math.ceil(round.difficulty*1.7)) end,
-  _speedMax = function() return 6 + math.random(0.0,round.difficulty/5) end,
-  _speedMin = function() return 2.5 + math.random(0.0,round.difficulty/5) end,
-  _spawn = function() return math.random(280,400) end,
-  
-  sprite = zomAssets.zombieSprite,
-  frame = zomAssets.zombieFrame,
-  width = zomAssets.zombieFrame:getWidth(),
-  height = zomAssets.zombieFrame:getHeight()
-}
-
-zombieTypes.big = {
-  damage        = 25,
-  hbScaleX      = 1.5,
-  hbScaleY      = 1.5,
-  hbOffsX       = 6,
-  hbOffsY       = -5,
-  pScale        = 5,
-  friction      = 14,
-  rotFactor     = 22,
-  rotActiveDist = 8,
-  collScale     = .8,
-  activeDist    = 120,
-  goldSpawn     = 15,
-  frameTime     = .2,
-  frameSize     = 30,
-  spriteGap     = 2,
-  
-  _health = function() return 55 * (1+math.ceil(round.difficulty/2)) end,
-  _killReward = function() return 60 + math.random(round.difficulty*2, round.difficulty*3) end,
-  _speedMax = function() return 8 + math.random(0,round.difficulty/2) end,
-  _speedMin = function() return 4.5 + math.random(0.0,round.difficulty/5) end,
-  _spawn = function() return math.random(350,400) end,
-  _regen = function(val) return (val + round.difficulty*4)/1250 end,
-  
-  sprite = zomAssets.bigZombieSprite,
-  frame = zomAssets.bigZombieFrame,
-  width = zomAssets.bigZombieFrame:getWidth(),
-  height = zomAssets.bigZombieFrame:getHeight()
-}
-
-
-zombieTypes.small = {
-  damage        = 10,
-  hbScaleX      = 1,
-  hbScaleY      = 1,
-  hbOffsX       = 6,
-  hbOffsY       = -5,
-  pScale        = 2,
-  friction      = 14,
-  rotFactor     = 34,
-  rotActiveDist = 8,
-  collScale     = .9,
-  activeDist    = 100,
-  goldSpawn     = 5,
-  frameTime     = .08,
-  frameSize     = 13,
-  spriteGap     = 3,
-  
-  _health = function() return 14 * (1+math.ceil(round.difficulty/2)) end,
-  _killReward = function() return 30 + math.random(round.difficulty*2, round.difficulty*3) end,
-  _speedMax = function() return 16 + math.random(0,round.difficulty/4) end,
-  _speedMin = function() return 6 + math.random(0,round.difficulty/4) end,
-  _spawn = function() return math.random(270,350) end,
-  
-  sprite = zomAssets.smallZombieSprite,
-  frame = zomAssets.smallZombieFrame,
-  width = zomAssets.smallZombieFrame:getWidth(),
-  height = zomAssets.smallZombieFrame:getHeight()
-}
-----------------
-
 function drawZombies()
   for i,z in ipairs(zombies) do
     ZombieParticleManager.draw(z.p.psys, z.x, z.y, z.p.s)
     
+    if z.zombieDamaged then love.graphics.setShader(damagedShader) end
     z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.oX, z.oY)
+    love.graphics.setShader()
+    
     if z.healthBar.isHidden == false then
       z.healthBar.animation:draw(z.healthBar.sprite, z.healthBar.x, z.healthBar.y, nil, z.hbScaleX, z.hbScaleY, z.hbOffsX, z.hbOffsY)
     end
@@ -122,7 +26,7 @@ end
 
 function spawnZombie(zombieType)
   local side = math.random(1,4)
-  local zombie = shallowCopy(zombieType)
+  local zombie = shallowCopy(zombieTypes[zombieType])
   
   --stats determined at spawn
   zombie.health = zombie._health()
@@ -232,7 +136,7 @@ function short_angle_dist(from, to)
 end
 
 local zombieFilter = function(item, other)
-  if other.isZombie then return nil
+  if other.isZombie then return 'slide'
   elseif other.isBullet then return 'cross'
   elseif other.isGrenade then return 'bounce'
   elseif other.isPlayer then return 'cross' end
@@ -240,17 +144,17 @@ end
 
 function zombieMoveHandler(zom,dt)
   zom.animation:update(dt)
+  local currentDist = distanceBetween(player.x, player.y, zom.x, zom.y)
   
-  if zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) <= zom.activeDist then
-    zom.speed = zom.speed * (1 + dt)
-  elseif zom.speed < zom.speedMax and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist*3 then
-    zom.speed = zom.speed * (2 + dt)
-  elseif zom.speed > zom.speedMin and distanceBetween(player.x, player.y, zom.x, zom.y) > zom.activeDist then
+  if zom.speed < zom.speedMax and currentDist <= zom.activeDist then
+    zom.speed = zom.speed * (1 + dt/2)
+--  elseif zom.speed < zom.speedMax and currentDist > zom.activeDist*3 then
+--    zom.speed = zom.speed * (1 + dt*2)
+  elseif zom.speed > zom.speedMin and currentDist > zom.activeDist then
     zom.speed = zom.speed * (1 - dt)
   end
   
   zom.rotSpeed = zom.rotFactor/zom.speed
-  
   zom.vx = zom.vx + math.cos(zom.currentAngle)*zom.speed
   zom.vy = zom.vy + math.sin(zom.currentAngle)*zom.speed
   zom.vx = zom.vx * (1 - math.min(dt*zom.friction, .8))

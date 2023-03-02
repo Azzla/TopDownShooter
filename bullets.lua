@@ -6,6 +6,7 @@ bloods = {}
 
 reloadTimer = globalTimer.new()
 cooldownTimer = globalTimer.new()
+warmingTimer = globalTimer.new()
 bloodsplat = love.graphics.newImage('sprites/zombies/blood.png')
 
 canReload = true
@@ -29,23 +30,40 @@ function drawBullets()
   end
 end
 
+function fire()
+  coolingDown = true
+  cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
+  
+  processGunSounds()
+  guns.equipped.currAmmo = guns.equipped.currAmmo - 1
+  round.bulletCount = round.bulletCount + 1
+  --magical magics
+  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
+  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
+  local handOffsetX  = handDistance * math.cos(handAngle)
+  local handOffsetY  = handDistance * math.sin(handAngle)
+  --magical magics
+  spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
+end
+
 function autoShoot(dt)
-  if guns.equipped == guns.uzi then
+  if guns.equipped.automatic then
     if guns.equipped.currAmmo > 0 then
       if love.mouse.isDown(1) and canShoot and not coolingDown then
-        coolingDown = true
-        cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
+        if guns.equipped.hasWarmup and not guns.equipped.isWarming then
+          guns.equipped.isWarming = true
+          love.audio.play(soundFX.warmup)
+          warmingTimer:after(guns.equipped.warmTime, function()
+            guns.equipped.warm = true
+            if guns.equipped == guns['chaingun'] then
+              love.audio.play(soundFX.firingWarm)
+            end
+          end)
+        end
         
-        processGunSounds()
-        guns.equipped.currAmmo = guns.equipped.currAmmo - 1
-        round.bulletCount = round.bulletCount + 1
-        --magical magics
-        local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
-        local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
-        local handOffsetX  = handDistance * math.cos(handAngle)
-        local handOffsetY  = handDistance * math.sin(handAngle)
-        --magical magics
-        spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
+        if guns.equipped.warm or not guns.equipped.hasWarmup then
+          fire()
+        end
       end
     else reload() end
   end
@@ -64,14 +82,27 @@ function spawnBullet(damageUp, dir, offsX, offsY)
   bullet.origX = bullet.sprite:getWidth()
   bullet.origY = bullet.sprite:getHeight()/2
   bullet.damage = guns.equipped.dmg
+  bullet.falloff = guns.equipped.falloff
+  if damageUp then bullet.damage = bullet.damage * 2 end
+  bullet.critChance = guns.equipped.critChance
   bullet.speed = guns.equipped.v
   bullet.pierce = guns.equipped.pierce
+  bullet.knockback = guns.equipped.knockback
+  bullet.slowdown = guns.equipped.slowdown
   bullet.dead = false
   
   if guns.equipped == guns['shotgun'] then
     bullet.timer = globalTimer.new()
-    bullet.timer:every(.02, function()
+    bullet.timer:every(bullet.falloff, function()
       if bullet.damage > 1 then
+        bullet.damage = bullet.damage - .5
+      end
+    end)
+  end
+  if guns.equipped == guns['chaingun'] then
+    bullet.timer = globalTimer.new()
+    bullet.timer:every(bullet.falloff, function()
+      if bullet.damage > .5 then
         bullet.damage = bullet.damage - .5
       end
     end)
@@ -83,10 +114,18 @@ function spawnBullet(damageUp, dir, offsX, offsY)
 end
 
 function reload()
+  if guns.equipped.hasWarmup then
+    guns.equipped.warm = false
+    guns.equipped.isWarming = false
+    warmingTimer:clear()
+    love.audio.stop(soundFX.warmup)
+    love.audio.stop(soundFX.firingWarm)
+  end
+  
   if canReload and guns.equipped.currAmmo < guns.equipped.clipSize then
     canReload = false
     canShoot = false
-
+    
     reloadTween:reset()
     soundFX.reload:play()
     
@@ -106,6 +145,7 @@ function bulletUpdate(dt)
   reloadTimer:update(dt)
   cooldownTimer:update(dt)
   gunTimer:update(dt)
+  warmingTimer:update(dt)
   
   if round.gameState == 2 then
     for i,b in ipairs(bullets) do
@@ -143,17 +183,38 @@ function bulletUpdate(dt)
   end
 end
 
+function criticalHit(chance)
+  local random = math.random(1, 100)
+  local success = chance * 100
+  
+  if random <= success then return true end
+  return false
+end
+
 function collideWithBullet(b, z)
   if b.id ~= z.id then
-    TextManager.bulletDmgPopup(b, z)
     BulletParticleManager.spawn(z.p.psys, math.random(12,24), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
     
     z.zombieDamaged = true
     z.healthBar.isHidden = false
-    shaderTimer:after(.15, function() z.zombieDamaged = false end)
+    shaderTimer:after(.08, function() z.zombieDamaged = false end)
     
-    z.health = z.health - b.damage
+    --Damage
+    if criticalHit(b.critChance) then
+      local newDmg = b.damage * 3
+      
+      z.health = z.health - newDmg
+      TextManager.bulletDmgPopup(newDmg, z)
+    else
+      
+      z.health = z.health - b.damage
+      TextManager.bulletDmgPopup(b.damage, z)
+    end
+    
     z.id = b.id
+    z.vx = z.vx * b.knockback
+    z.vy = z.vy * b.knockback
+    z.speed = z.speed * b.slowdown
     
     love.audio.stop(soundFX.zombies.hit)
     love.audio.play(soundFX.zombies.hit)
@@ -198,6 +259,12 @@ function spawnBlood(x,y)
 end
 
 function fireBullets()
+  if guns.equipped.hasWarmup then return end
+  
+  processGunSounds()
+  BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
+  guns.equipped.currAmmo = guns.equipped.currAmmo - 1
+  
   --magical magics
   local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
   local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
@@ -224,22 +291,31 @@ function fireBullets()
   elseif guns.equipped == guns['sniper'] then
     spawnBullet(player.damageUp, player_angle(), handOffsetX, handOffsetY)
     round.bulletCount = round.bulletCount + 1
+    
+  elseif guns.equipped == guns['deagle'] then
+    spawnBullet(player.damageUp, player_angle(), handOffsetX, handOffsetY)
+    round.bulletCount = round.bulletCount + 1
   end
 end
 
 function love.mousereleased(x, y, button)
   if round.gameState == 2 and not shopCooldown then
     if button == 1 then
+      --stop warming guns with warming time, like chaingun
+      if guns.equipped.hasWarmup then
+        guns.equipped.warm = false
+        guns.equipped.isWarming = false
+        warmingTimer:clear()
+        love.audio.stop(soundFX.warmup)
+        love.audio.stop(soundFX.firingWarm)
+      end
+      
       if guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
         --check for cooldown
         if guns.equipped.cooldown > 0 then
           coolingDown = true
           cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
         end
-        
-        processGunSounds()
-        BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
-        guns.equipped.currAmmo = guns.equipped.currAmmo - 1
         fireBullets()
         
         if guns.equipped.currAmmo == 0 then reload() end

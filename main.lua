@@ -41,6 +41,7 @@ function love.load()
   require('zombie')
   require('bullets')
   require('grenades')
+  require('melees')
   require('healthbar')
   require('rounds')
   require('shop')
@@ -71,6 +72,7 @@ function love.update(dt)
     walkAnimation(dt)
     zombieUpdate(dt)
     bulletUpdate(dt)
+    updateMelee(dt)
     autoShoot(dt)
     grenadeUpdate(dt)
     updateRounds(dt)
@@ -105,17 +107,17 @@ function love.draw()
     cam:attach()
     
     --nighttime shader
-    if round.difficulty >= 20 then drawNightShader() end
+    if round.difficulty >= 40 then drawNightShader() end
     
     mainMap:drawLayer(mainMap.layers["Background"])
-    love.graphics.setShader()
     
     --Objects
     drawObjects()
     drawGuns()
+    drawMelee()
     
     --Player
-    if shaders.damaged then love.graphics.setShader(damagedShader) end
+    if shaders.damaged then love.graphics.setShader(damagedPlayerShader) end
     
     if player.isInvincible then
       drawInvincibilityShader()
@@ -128,7 +130,7 @@ function love.draw()
     love.graphics.setShader()
     
     --Nighttime
-    if round.difficulty >= 20 then drawNightShader() end
+    --if round.difficulty >= 40 then drawNightShader() end
     
     --In-Game Text
     TextManager.drawGame()
@@ -139,7 +141,13 @@ function love.draw()
     drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
     
     local ret1,ret2 = cam:mousePosition()
-    love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
+    --magical magics
+    local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
+    local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
+    local handOffsetX  = handDistance * math.cos(handAngle)
+    local handOffsetY  = handDistance * math.sin(handAngle)
+    --magical magics
+    love.graphics.draw(reticle, ret1+handOffsetX, ret2+handOffsetY,nil,nil,nil,3,3)
     
     love.graphics.setShader()
     
@@ -187,7 +195,8 @@ function love.draw()
     mainMap:drawLayer(mainMap.layers["Background"])
     love.graphics.setShader()
     
-    displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
+--    displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
+    displayUpgrades(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
     
     cam:detach()
     cam:zoomTo(currentZoom.zoom)
@@ -217,7 +226,7 @@ function love.draw()
 end
 
 function gameOverScreen()
-  love.graphics.draw(gameOverGraphic, 0, 0, nil, love.graphics.getWidth() / gameOver.graphic:getWidth(), love.graphics.getHeight() / gameOver.graphic:getHeight())
+  love.graphics.draw(gameOverGraphic, 0, 0, nil, love.graphics.getWidth() / gameOverGraphic:getWidth(), love.graphics.getHeight() / gameOverGraphic:getHeight())
 end
 
 function love.keypressed(key, unicode)

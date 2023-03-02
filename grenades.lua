@@ -29,9 +29,10 @@ function spawnGrenade()
   grenade.rotation = player_angle()
   grenade.rotFactor = 4
   grenade.sprite = grenadeSprite
-  grenade.damage = 45
+  grenade.damage = 25
   grenade.dmgRadius = 60
   grenade.dead = false
+  grenade.bulletCollisions = true
   grenade.time = .8
   grenade.timer = grenadeTimer:new()
   
@@ -50,6 +51,8 @@ function spawnGrenade()
         GrenadeParticleManager.spawn(z.p.psys, math.random(12,24), grenade_angle(grenade, z) - math.pi/2 - math.pi/8, math.pi/4, 3)
         
         z.zombieDamaged = true
+        shaderTimer:after(.08, function() z.zombieDamaged = false end)
+        
         z.healthBar.isHidden = false
         z.health = z.health - grenade.damage
         love.audio.stop(soundFX.zombies.hit)
@@ -109,7 +112,10 @@ function grenadeUpdate(dt)
     for i=1,length do
       local other = cols[i].other
       if other.isBullet then
-        g.explode()
+        if g.bulletCollisions then
+          g.explode()
+          g.bulletCollisions = false
+        end
         other.dead = true
       elseif other.isZombie then
         g.rotFactor = g.rotFactor / 2

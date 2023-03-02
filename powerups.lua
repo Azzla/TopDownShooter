@@ -8,7 +8,7 @@ powerups.sprites = {
   love.graphics.newImage('sprites/invincibility.png')
 }
 --effects
-powerups.effects = {10, 1.5, 2}
+powerups.effects = {10, 1.5, 290} --health, damage multi, bonus speed
 healthUpHealth = 10
 damageUpMult = 1.5
 speedUpMult = 1.5
@@ -41,7 +41,7 @@ function spawnPowerup(index, zombie)
     powerup.type = 'DAMAGE x2'
   elseif powerup.id == 3 then
     powerup.duration = 10
-    powerup.type = 'SPEED x2'
+    powerup.type = 'SPEED UP'
   elseif powerup.id == 4 then
     powerup.duration = 10
     powerup.type = 'INVINCIBILITY'
@@ -52,11 +52,11 @@ function spawnPowerup(index, zombie)
   table.insert(powerupsActive, powerup)
 end
 
---5% chance on kill to get a powerup drop.  From there, we determine which powerup to give according to the chances table weights.
+--3% chance on kill to get a powerup drop.  From there, we determine which powerup to give according to the chances table weights.
 function powerupChance(zombie)
   local random = math.random(1, 100)
   
-  if random > 92 then
+  if random > 97 then
     --chances
     local chances = {100,200,300,400} --health / damage / speed / invincibility
     local total = chances[#chances] --value of last item in table
@@ -82,18 +82,22 @@ function activatePowerup(powerup)
   powerup.active = true
   
   if powerup.id == 1 then
+    -- health up
     if (player.health < 100) then
       player.health = player.health + healthUpHealth
       if player.health > 100 then player.health = 100 end
     end
     love.audio.play(soundFX.health)
   elseif powerup.id == 2 then
+    -- damage x1.5
     player.damageUp = true
     love.audio.play(soundFX.powerup)
   elseif powerup.id == 3 then
-    player.v = player.v * powerup.value
+    --speed up
+    player.bonusV = powerup.value
     love.audio.play(soundFX.powerup)
   elseif powerup.id == 4 then
+    -- invincibility
     player.isInvincible = true
     love.audio.play(soundFX.invincible)
   end
@@ -137,7 +141,7 @@ function powerupUpdate(dt)
         if p.id == 2 then
           player.damageUp = false
         elseif p.id == 3 then
-          player.v = player.v / p.value
+          player.bonusV = 0
         elseif p.id == 4 then
           player.isInvincible = false
         end

@@ -14,6 +14,7 @@ shop.continue = love.graphics.newImage('sprites/ui/UIBox1.png')
 shop.continueHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
 
 shop.display = love.graphics.newImage('sprites/ui/UIShop.png')
+shop.displayHot = love.graphics.newImage('sprites/ui/UIShopHot.png')
 shop.textScale = 1/2
 shop.x = 0
 shop.y = 0
@@ -78,6 +79,24 @@ skills = {
   end
 }
 
+upgrades = {
+  function()
+    guns.shotgun.unlocked = true
+    nextRound()
+    love.audio.play(soundFX.shotgun)
+  end,
+  function()
+    guns.sniper.unlocked = true
+    nextRound()
+    love.audio.play(soundFX.sniper)
+  end,
+  function()
+    guns.uzi.unlocked = true
+    nextRound()
+    love.audio.play(soundFX.powerup)
+  end
+}
+
 function shopUpdate(dt)
   shopTimer:update(dt)
   --Check if upgrades maxed out
@@ -97,14 +116,14 @@ function nextRound()
     nextClicked = true
     shopTimer:after(.1, function()
       shopCooldown = false
-      round.zombiesMaxSpawn = math.floor(math.random(5,8)) + round.difficulty
       resetShopButtons()
+      
+      round.zombiesMaxSpawn = round.zombiesMaxSpawn + math.max(3, round.difficulty)
       round.difficulty = round.difficulty + 1
       round.gameState = 2
       soundFX.music:setVolume(.3)
       nextClicked = false
     end)
-    love.audio.play(soundFX.roundStart)
   end
 end
 
@@ -112,8 +131,37 @@ function generalTab()
   
 end
 
+local offsetX = shop.display:getWidth() / 8
+local offsetY = shop.display:getHeight() / 8
+
+function displayUpgrades(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
+  if not shopButtonsCreated then
+    for i=1,#upgrades do
+      local fn = upgrades[i]
+      if i == 1 then
+        shopButtonManager.new(origin + 100 - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
+      elseif i == 2 then
+        shopButtonManager.new(originXCenter - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
+      elseif i == 3 then
+        shopButtonManager.new(originRight - 100 - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
+      end
+    end
+    shopButtons = shopButtonManager.getButtons()
+    shopButtonsCreated = true
+  end
+  
+  shopButtonManager.draw(ret1, ret2)
+  
+  love.graphics.draw(guns.shotgun.sprite, origin + 93, originYCenter - 10, nil, 1.5)
+  love.graphics.draw(guns.sniper.sprite, originXCenter - 7, originYCenter - 10, nil, 1.5)
+  love.graphics.draw(guns.uzi.sprite, originRight - 107, originYCenter - 10, nil, 1.5)
+  
+  --Reticle
+  love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
+end
+
 function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
-  --create buttons -- TODO: this code sucks dick balls
+  --create buttons -- TODO: this code sucks dick balls and penis
   if not shopButtonsCreated then
     for i=1,#skills do
       local fn = skills[i]
@@ -204,7 +252,7 @@ end
 function resetShop()
   resetShopButtons()
   shop.skills.price = 10
-  shop.skills.grenades = 10
+  shop.skills.grenades = 1000
   shop.skills.damage = 6
   shop.skills.damPurch = 0
   shop.skills.speedPurch = 0

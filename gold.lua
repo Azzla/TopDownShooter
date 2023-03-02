@@ -1,7 +1,7 @@
 local TextManager = require('textManager')
 
 gold = {}
-gold.total = 10000
+gold.total = 0
 gold.bigSprite = love.graphics.newImage('sprites/coinBig.png')
 coins = {}
 
@@ -36,11 +36,12 @@ function updateGold(dt)
   if round.gameState == 2 then
     for i,c in ipairs(coins) do
       if c.anim then c.anim:update(dt) end
+      local coinDistance = distanceBetween(c.x, c.y, player.x, player.y)
       
-      if distanceBetween(c.x, c.y, player.x, player.y) > collectionDist and distanceBetween(c.x, c.y, player.x, player.y) < (25 * shop.skills.magnet) then
+      if coinDistance > collectionDist and coinDistance < (25 * shop.skills.magnet) then
         c.x = c.x + math.cos(zombie_angle_wrld(c)) * c.speed * dt
         c.y = c.y + math.sin(zombie_angle_wrld(c)) * c.speed * dt
-      elseif distanceBetween(c.x, c.y, player.x, player.y) < collectionDist then
+      elseif coinDistance < collectionDist then
         gold.total = gold.total + c.value
         TextManager.collectCoinPopup(c.x, c.y, tostring(c.value))
         

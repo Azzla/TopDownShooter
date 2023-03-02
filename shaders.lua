@@ -43,6 +43,17 @@ damagedShader = love.graphics.newShader[[
   vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
     vec4 pixel = Texel(texture, texture_coords );
     
+    pixel.r = 1;
+    pixel.g = 1;
+    pixel.b = 1;
+    return pixel;
+  }
+]]
+
+damagedPlayerShader = love.graphics.newShader[[
+  vec4 effect( vec4 color, Image texture, vec2 texture_coords, vec2 screen_coords) {
+    vec4 pixel = Texel(texture, texture_coords );
+    
     pixel.g = pixel.g / 2;
     pixel.b = pixel.b / 2;
     return pixel;

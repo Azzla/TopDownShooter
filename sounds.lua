@@ -2,6 +2,7 @@ soundFX = {}
 annihilatePlayed = false
 soundFXTimer = globalTimer.new()
 musicStarted = false
+love.audio.setVolume(1)
 
 function loadSoundFX()
   soundFX.lazer = love.audio.newSource('sounds/lazer2.mp3', 'static')
@@ -12,6 +13,7 @@ function loadSoundFX()
   soundFX.dash = love.audio.newSource('sounds/dash.mp3','static')
   soundFX.wind = love.audio.newSource('sounds/wind.mp3', 'stream')
   soundFX.music = love.audio.newSource('sounds/gameMusic2.mp3', 'stream')
+  soundFX.music2 = love.audio.newSource('sounds/gameMusic3.mp3', 'stream')
   soundFX.musicBoss = love.audio.newSource('sounds/gameMusicBoss.mp3', 'stream')
   soundFX.powerup = love.audio.newSource('sounds/powerup.mp3', 'static')
   soundFX.health = love.audio.newSource('sounds/health.mp3', 'static')
@@ -25,18 +27,31 @@ function loadSoundFX()
   soundFX.shotgun = love.audio.newSource('sounds/shotgun.mp3', 'static')
   soundFX.pumpAction = love.audio.newSource('sounds/pumpAction.mp3', 'static')
   soundFX.zoom = love.audio.newSource('sounds/zoom.mp3', 'static')
+  soundFX.slash = love.audio.newSource('sounds/slash.wav', 'static')
+  soundFX.deagle = love.audio.newSource('sounds/deagle.wav', 'static')
+  soundFX.assaultLazer = love.audio.newSource('sounds/assaultLazer.wav', 'static')
+  soundFX.warmup = love.audio.newSource('sounds/warmup.mp3', 'static')
+  soundFX.chaingun = love.audio.newSource('sounds/chaingun.mp3', 'static')
+  soundFX.firingWarm = love.audio.newSource('sounds/firingWarm.mp3', 'static')
+  soundFX.firingWarm:setLooping(true)
   
   soundFX.zombies = {}
   soundFX.zombies.death = love.audio.newSource('sounds/zombieDie2.mp3', 'static')
   soundFX.zombies.hit = love.audio.newSource('sounds/zombieHit.mp3', 'static')
   
+  --Mixing
   soundFX.volumeControl = 3
-  
   soundFX.cockPistol:setVolume(.4)
   soundFX.sniper:setVolume(.3)
   soundFX.shotgun:setVolume(.1)
   soundFX.pumpAction:setVolume(.1)
   soundFX.zoom:setVolume(.2)
+  soundFX.slash:setVolume(1)
+  soundFX.deagle:setVolume(.4)
+  soundFX.warmup:setVolume(.3)
+  soundFX.firingWarm:setVolume(.4)
+  soundFX.chaingun:setVolume(.1)
+  soundFX.assaultLazer:setVolume(.24)
   
   soundFX.lazer:setVolume(.4)
   soundFX.reload:setVolume(.4)
@@ -50,6 +65,8 @@ function loadSoundFX()
   soundFX.wind:setVolume(0)
   soundFX.music:setVolume(.35)
   soundFX.music:setLooping(true)
+  soundFX.music2:setVolume(.25)
+  soundFX.music2:setLooping(true)
   soundFX.musicBoss:setVolume(.35)
   soundFX.musicBoss:setLooping(true)
   soundFX.powerup:setVolume(.5)
@@ -60,7 +77,7 @@ function loadSoundFX()
 end
 
 function playMusic()
---  love.audio.play(soundFX.musicBoss)
+  love.audio.play(soundFX.music2)
 end
 
 function gameMusic(dt)
@@ -78,7 +95,7 @@ function gameMusic(dt)
       end)
     end
     
-    if soundFX.music:getVolume() ~= .35 then soundFX.music:setVolume(.35) end
+    if soundFX.music:getVolume() ~= 1 then soundFX.music:setVolume(1) end
     if soundFX.musicBoss:getVolume() ~= .35 then soundFX.musicBoss:setVolume(.35) end
   end
   

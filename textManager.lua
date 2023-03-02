@@ -66,21 +66,22 @@ function TextManager.playerDmgPopup(x, y, z)
   })
 end
 
-function TextManager.bulletDmgPopup(b, z)
+function TextManager.bulletDmgPopup(damage, z)
+  local dur = math.min(1, math.max(.4, damage/8))
   gPopupManager:addPopup(
   {
-      text = tostring(b.damage),
+      text = tostring(damage),
       font = pixelFont,
-      color = {r = .5, g = .5, b = 1, a = 1},
+      color = {r = .6, g = .6, b = 1, a = 1},
       x = z.x + math.random(-10,10),
       y = z.y,
-      scaleX = .3 + b.damage/75,
-      scaleY = .3 + b.damage/75,
+      scaleX = .3 + damage/66,
+      scaleY = .3 + damage/66,
       blendMode = 'add',
-      fadeOut = {start = .5, finish = .7},
+      fadeOut = {start = dur - .1, finish = dur},
       dX = math.random(-8,8),
       dY = math.random(-20,-30),
-      duration = .7
+      duration = dur
   })
 end
 
@@ -107,16 +108,16 @@ function TextManager.collectCoinPopup(x, y, str)
   {
       text = '+'..str,
       font = pixelFont,
-      color = {r = 1, g = 1, b = 1, a = 1},
+      color = {r = 1, g = 1, b = .1, a = 1},
       x = x,
       y = y,
-      scaleX = .6,
-      scaleY = .6,
+      scaleX = .35,
+      scaleY = .35,
       blendMode = 'add',
-      fadeOut = {start = .4, finish = .5},
+      fadeOut = {start = .2, finish = .4},
       dX = 0,
       dY = -10,
-      duration = .5
+      duration = .4
   })
 end
 

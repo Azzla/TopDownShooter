@@ -26,8 +26,9 @@ player.y = map_height / 2
 player.vy = 0
 player.w = player.frame:getWidth()
 player.h = player.frame:getHeight()
-player.v = 350
-player.friction = 6
+player.v = 470
+player.bonusV = 0
+player.friction = 8
 player.grid = anim8.newGrid(16, 16, 128, 16)
 player.animation = anim8.newAnimation(player.grid("1-8",1), 0.08)
 player.health = 100
@@ -121,17 +122,22 @@ local playerFilter = function(item, other)
 end
 
 function movementHandle(dt)
+  local penalty = 0
+  if love.mouse.isDown(1) and guns.equipped == guns['chaingun'] and canShoot then
+    penalty = guns.equipped.movementPenalty
+  end
+  
   if love.keyboard.isDown("a") then
-    player.vx = player.vx - (player.v+shop.skills.speed)*dt
+    player.vx = player.vx - (player.v+shop.skills.speed+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("d") then
-    player.vx = player.vx + (player.v+shop.skills.speed)*dt
+    player.vx = player.vx + (player.v+shop.skills.speed+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("w") then
-    player.vy = player.vy - (player.v+shop.skills.speed)*dt
+    player.vy = player.vy - (player.v+shop.skills.speed+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("s") then
-    player.vy = player.vy + (player.v+shop.skills.speed)*dt
+    player.vy = player.vy + (player.v+shop.skills.speed+player.bonusV-penalty)*dt
   end
   
   if player.x <= 10 then
