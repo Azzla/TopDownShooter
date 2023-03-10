@@ -1,5 +1,6 @@
 local TextManager = require('textManager')
 local BulletParticleManager = require('particleManager')
+local ParticlesDict = require('dicts/particlesDict')
 
 bullets = {}
 bloods = {}
@@ -20,8 +21,15 @@ bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
 function drawBullets()
+  local offX,offY = offsetXY(guns.equipped.bulletOffsX, guns.equipped.bulletOffsY, player_angle())
+  BulletParticleManager.draw(guns.equipped.pSys, player.x + offX, player.y + offY, 1)
+  
   for i,b in ipairs(bullets) do
-    love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+    if b.anim then
+      b.anim:draw(b.sheet, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+    else
+      love.graphics.draw(b.sprite, b.x, b.y, b.direction, 1, 1, b.origX, b.origY)
+    end
   end
   for i,bl in ipairs(bloods) do
     love.graphics.setColor(1,1,1,bl.alpha.a)
@@ -37,13 +45,11 @@ function fire()
   processGunSounds()
   guns.equipped.currAmmo = guns.equipped.currAmmo - 1
   round.bulletCount = round.bulletCount + 1
+  
   --magical magics
-  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
-  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
-  local handOffsetX  = handDistance * math.cos(handAngle)
-  local handOffsetY  = handDistance * math.sin(handAngle)
-  --magical magics
-  spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
+  local offX,offY = offsetXY(guns.equipped.bulletOffsX, guns.equipped.bulletOffsY, player_angle())
+  
+  spawnBullet(player.damageUp, guns.equipped.spread(), offX, offY)
 end
 
 function autoShoot(dt)
@@ -51,6 +57,7 @@ function autoShoot(dt)
     if guns.equipped.currAmmo > 0 then
       if love.mouse.isDown(1) and canShoot and not coolingDown then
         if guns.equipped.hasWarmup and not guns.equipped.isWarming then
+          --warmup stuff
           guns.equipped.isWarming = true
           love.audio.play(soundFX.warmup)
           warmingTimer:after(guns.equipped.warmTime, function()
@@ -84,6 +91,13 @@ function spawnBullet(damageUp, dir, offsX, offsY)
   bullet.damage = guns.equipped.dmg
   bullet.falloff = guns.equipped.falloff
   if damageUp then bullet.damage = bullet.damage * 2 end
+  if guns.equipped.collision then
+    bullet.collW = 4
+    bullet.collY = 4
+  else
+    bullet.collW = 2
+    bullet.collY = 2
+  end
   bullet.critChance = guns.equipped.critChance
   bullet.speed = guns.equipped.v
   bullet.pierce = guns.equipped.pierce
@@ -91,15 +105,7 @@ function spawnBullet(damageUp, dir, offsX, offsY)
   bullet.slowdown = guns.equipped.slowdown
   bullet.dead = false
   
-  if guns.equipped == guns['shotgun'] then
-    bullet.timer = globalTimer.new()
-    bullet.timer:every(bullet.falloff, function()
-      if bullet.damage > 1 then
-        bullet.damage = bullet.damage - .5
-      end
-    end)
-  end
-  if guns.equipped == guns['chaingun'] then
+  if guns.equipped.falloff then
     bullet.timer = globalTimer.new()
     bullet.timer:every(bullet.falloff, function()
       if bullet.damage > .5 then
@@ -107,8 +113,34 @@ function spawnBullet(damageUp, dir, offsX, offsY)
       end
     end)
   end
+  BulletParticleManager.spawn(guns.equipped.pSys, unpack(guns.equipped.pSpread(player_angle())))
   
-  BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
+  world:add(bullet, bullet.x, bullet.y, bullet.collW, bullet.collY)
+  table.insert(bullets, bullet)
+end
+
+function spawnBulletZombie(z)
+  local bullet = {}
+  
+  bullet.isBullet = true
+  bullet.isEnemyBullet = true
+  bullet.x = z.x
+  bullet.y = z.y
+  bullet.id = round.bulletCount/100000
+  bullet.direction = z.currentAngle + math.pi/2
+  bullet.sprite = z.bulletSprite
+  bullet.sheet = z.bulletSheet
+  bullet.anim = z.bulletAnimation:clone()
+  bullet.origX = bullet.sprite:getWidth()/2
+  bullet.origY = bullet.sprite:getHeight()/2
+  bullet.damage = z.damage
+  --bullet.critChance = z.critChance
+  bullet.speed = z.bulletV
+  --bullet.pierce = z.pierce
+  bullet.dead = false
+  
+  --BulletParticleManager.spawn(guns.equipped.pSys, unpack(guns.equipped.pSpread(player_angle())))
+  
   world:add(bullet, bullet.x, bullet.y, 2, 2)
   table.insert(bullets, bullet)
 end
@@ -139,9 +171,12 @@ end
 
 local bulletFilter = function(item, other)
   if other.isBullet then return nil end
+  if other.isPlayer then return 'cross' end
 end
 
 function bulletUpdate(dt)
+  BulletParticleManager.update(guns.equipped.pSys, dt)
+  
   reloadTimer:update(dt)
   cooldownTimer:update(dt)
   gunTimer:update(dt)
@@ -155,8 +190,18 @@ function bulletUpdate(dt)
       local goalY = b.y + math.sin(b.direction - math.pi/2) * b.speed * dt
       local actualX, actualY, cols, length = world:move(b, goalX, goalY, bulletFilter)
       b.x, b.y = actualX, actualY
+      
+      if b.isEnemyBullet and not b.dead then
+        b.anim:update(dt)
+        for i=1,length do
+          local other = cols[i].other
+          if other.isPlayer then
+            collideBulletWithPlayer(b)
+          end
+        end
+      end
     end
-
+    
     for i=#bullets,1,-1 do
       local b = bullets[i]
       if b.x < 0 or b.y < 0 or b.x > love.graphics.getWidth() or b.y > love.graphics.getHeight() then
@@ -189,6 +234,19 @@ function criticalHit(chance)
   
   if random <= success then return true end
   return false
+end
+
+function collideBulletWithPlayer(b)
+  --Damage
+  player.health = player.health - b.damage
+  TextManager.playerDmgPopup(player.x, player.y, b)
+  shaders.damaged = true
+  shaderTimer:after(.1, function() shaders.damaged = false end)
+  
+  love.audio.stop(soundFX.zombies.hit)
+  love.audio.play(soundFX.zombies.hit)
+
+  b.dead = true
 end
 
 function collideWithBullet(b, z)
@@ -262,17 +320,12 @@ function fireBullets()
   if guns.equipped.hasWarmup then return end
   
   processGunSounds()
-  BulletParticleManager.spawn(player.p.psys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
+  BulletParticleManager.spawn(guns.equipped.pSys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
   guns.equipped.currAmmo = guns.equipped.currAmmo - 1
   
-  --magical magics
-  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
-  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
-  local handOffsetX  = handDistance * math.cos(handAngle)
-  local handOffsetY  = handDistance * math.sin(handAngle)
-  --magical magics
+  local handOffsetX,handOffsetY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY,player_angle())
   
-  if guns.equipped == guns['shotgun'] then
+  if guns.equipped.bullets then
     local bullets = guns.equipped.bullets
     local direction = player_angle() - math.pi/32
     local increment = guns.equipped.spread() / bullets
@@ -283,17 +336,8 @@ function fireBullets()
       direction = direction + increment
       increment = guns.equipped.spread() / bullets
     end
-    
-  elseif guns.equipped == guns['pistol'] then
+  else
     spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
-    round.bulletCount = round.bulletCount + 1
-    
-  elseif guns.equipped == guns['sniper'] then
-    spawnBullet(player.damageUp, player_angle(), handOffsetX, handOffsetY)
-    round.bulletCount = round.bulletCount + 1
-    
-  elseif guns.equipped == guns['deagle'] then
-    spawnBullet(player.damageUp, player_angle(), handOffsetX, handOffsetY)
     round.bulletCount = round.bulletCount + 1
   end
 end

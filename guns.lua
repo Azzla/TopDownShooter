@@ -2,6 +2,7 @@ guns = require('dicts/gunsDict')
 
 guns.equipped = guns.pistol
 
+
 gunTimer = globalTimer.new()
 
 table.insert(KEYPRESSED, function(key, scancode)
@@ -47,6 +48,12 @@ table.insert(KEYPRESSED, function(key, scancode)
     
     switchWeapon('assaultRifle')
     love.audio.play(soundFX.zoom)
+  elseif key == '8' and guns.railgun.unlocked then
+    if not canReload and guns.equipped == guns.railgun then return end
+    if guns.equipped == guns.railgun then return end
+    
+    switchWeapon('railgun')
+    love.audio.play(soundFX.zoom)
   end
   
   if round.gameState == 2 and canReload and key == 'r' then
@@ -62,11 +69,21 @@ function processGunSounds()
   elseif guns.equipped == guns['sniper'] then
     screenShake(.15,.5)
     gunTimer:after(.4, function() love.audio.play(soundFX.pumpAction) end)
+  elseif guns.equipped == guns['railgun'] then
+    screenShake(.35,.8)
   end
 end
 
 
 function switchWeapon(str)
+  if guns.equipped.hasWarmup then
+    guns.equipped.warm = false
+    guns.equipped.isWarming = false
+    warmingTimer:clear()
+    love.audio.stop(soundFX.warmup)
+    love.audio.stop(soundFX.firingWarm)
+  end
+  
   local prevZoom = guns.equipped.zoomFactor
   
   guns.equipped = guns[str]
@@ -81,5 +98,9 @@ function switchWeapon(str)
 end
 
 function drawGuns()
-  love.graphics.draw(guns.equipped.sprite, player.x, player.y, player_angle(), 1, 1, guns.equipped.offsX, guns.equipped.offsY)
+  if guns.equipped.animation then
+    guns.equipped.animation:draw(guns.equipped.sprite, player.x, player.y, player_angle(), 1, 1, guns.equipped.offsX, guns.equipped.offsY)
+  else
+    love.graphics.draw(guns.equipped.sprite, player.x, player.y, player_angle(), 1, 1, guns.equipped.offsX, guns.equipped.offsY)
+  end
 end

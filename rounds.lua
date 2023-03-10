@@ -131,6 +131,7 @@ table.insert(KEYPRESSED, function(key, scancode)
       if love.keyboard.isDown('j','k') then
         guns.equipped.currAmmo = 999999
         player.v = 1500
+        player.health = 999999
       end
     end
   end
@@ -176,11 +177,9 @@ function resetRounds()
 end
   
 function doZombieSpawning()
-  if #zombies <= 200 and currentPrompt ~= prompts.wasd and currentPrompt ~= prompts.holdMouse then
-    
+  if #zombies <= 200 then
     if round.zombiesSpawned < round.zombiesMaxSpawn then
-      
-      spawnZombie('normal')
+      spawnZombie('shooter')
       round.zombiesSpawned = round.zombiesSpawned + 1
       
       if round.difficulty >= 5 and round.zombiesSpawned%10 == 0 then

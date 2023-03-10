@@ -10,6 +10,8 @@ bloodSystem:setSizes(1, .5, .25)
 bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
+local shootTimer = globalTimer.new()
+
 function drawZombies()
   for i,z in ipairs(zombies) do
     ZombieParticleManager.draw(z.p.psys, z.x, z.y, z.p.s)
@@ -34,6 +36,13 @@ function spawnZombie(zombieType)
   zombie.speedMax = zombie._speedMax()
   zombie.speedMin = zombie._speedMin()
   if zombie._regen then zombie.regen = zombie._regen(zombie.health) end
+  if zombie.fireRate then 
+    shootTimer:every(zombie.fireRate, function()
+      if not zombie.dead then
+        spawnBulletZombie(zombie)
+      end
+    end)
+  end
   
   --defaults
   zombie.isZombie = true
@@ -66,6 +75,7 @@ end
 
 function zombieUpdate(dt)
   if round.gameState == 2 then
+    shootTimer:update(dt)
     for i,z in ipairs(zombies) do
       ZombieParticleManager.update(z.p.psys, dt)
       
@@ -148,8 +158,6 @@ function zombieMoveHandler(zom,dt)
   
   if zom.speed < zom.speedMax and currentDist <= zom.activeDist then
     zom.speed = zom.speed * (1 + dt/2)
---  elseif zom.speed < zom.speedMax and currentDist > zom.activeDist*3 then
---    zom.speed = zom.speed * (1 + dt*2)
   elseif zom.speed > zom.speedMin and currentDist > zom.activeDist then
     zom.speed = zom.speed * (1 - dt)
   end
@@ -169,7 +177,7 @@ function zombieMoveHandler(zom,dt)
   
   for i=1,length do
     local other = cols[i].other
-    if other.isBullet and zom.collideable then
+    if other.isBullet and zom.collideable and not other.isEnemyBullet then
       collideWithBullet(other, zom)
     elseif other.isPlayer then
       if zom.collideable then

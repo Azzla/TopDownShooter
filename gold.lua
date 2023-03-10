@@ -14,7 +14,9 @@ goldSheet = love.graphics.newImage('sprites/coins/coinGold-sheet.png')
 blackSprite = love.graphics.newImage('sprites/coins/coinBlack.png')
 blackSheet = love.graphics.newImage('sprites/coins/coinBlack-sheet.png')
 azureSprite = love.graphics.newImage('sprites/coins/coinAzure.png')
+azureSheet = love.graphics.newImage('sprites/coins/coinAzure-sheet.png')
 rubySprite = love.graphics.newImage('sprites/coins/coinRuby.png')
+rubySheet = love.graphics.newImage('sprites/coins/coinRuby-sheet.png')
 
 
 local values = {
@@ -95,24 +97,21 @@ function spawnCoin(obj, value, sprite, spriteSheet)
   coin.collected = false
   coin.value = value
   coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
-  
-  if spriteSheet then
-    coin.sheet = spriteSheet
-    coin.grid = anim8.newGrid(4,4,16,4)
-    coin.anim = anim8.newAnimation(coin.grid('1-4', 1), .05)
-  end
+  coin.sheet = spriteSheet
+  coin.grid = anim8.newGrid(4,4,16,4)
+  coin.anim = anim8.newAnimation(coin.grid('1-4', 1), .06)
   
   table.insert(coins, coin)
 end
 
 function spawnKillReward(zombie)
   while zombie.killReward >= values.ruby do
-    spawnCoin(zombie, values.ruby, rubySprite)
+    spawnCoin(zombie, values.ruby, rubySprite, rubySheet)
     zombie.killReward = zombie.killReward - values.ruby
   end
   
   while zombie.killReward >= values.azure do
-    spawnCoin(zombie, values.azure, azureSprite)
+    spawnCoin(zombie, values.azure, azureSprite, azureSheet)
     zombie.killReward = zombie.killReward - values.azure
   end
   

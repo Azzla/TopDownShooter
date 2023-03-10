@@ -1,11 +1,4 @@
 local PlayerParticleManager = require('particleManager')
---player particles
-local bulletSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)
-bulletSystem:setParticleLifetime (.05, .15)
-bulletSystem:setSizes(1)
-bulletSystem:setSpeed(120)
-bulletSystem:setColors(1, 1, 1, 1, rgb(183), rgb(231), rgb(246), 1)
-
 local dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)
 dashSystem:setParticleLifetime (.05, .3)
 dashSystem:setSizes(1)
@@ -36,7 +29,6 @@ player.barSprite = love.graphics.newImage('sprites/healthbarUI.png')
 player.heartIcon = love.graphics.newImage('sprites/heartIcon.png')
 player.ammoIcon = love.graphics.newImage('sprites/energyIcon.png')
 player.canDash = true
-player.p = PlayerParticleManager.new(player.x, player.y, bulletSystem:clone(), 1)
 player.dashP = PlayerParticleManager.new(player.x, player.y, dashSystem:clone(), 1)
 player.isRecharge = true
 
@@ -78,18 +70,10 @@ end
 
 function drawPlayer()
   player.animation:draw(player.sprite, player.x, player.y, player_angle(), 1, 1, player.w/2, 1 + player.h/2)
-  
-  local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
-  local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
-  local handOffsetX  = handDistance * math.cos(handAngle)
-  local handOffsetY  = handDistance * math.sin(handAngle)
-  
-  PlayerParticleManager.draw(player.p.psys, player.x + handOffsetX, player.y + handOffsetY)
   PlayerParticleManager.draw(player.dashP.psys, player.x, player.y)
 end
 
 function playerUpdate(dt)
-  PlayerParticleManager.update(player.p.psys, dt)
   PlayerParticleManager.update(player.dashP.psys, dt)
   
   healthBarUpdate(player.x, player.y, player.healthBar, player.healthBar.animation, player.health, player.healthBar.totalHealth)
@@ -123,8 +107,12 @@ end
 
 function movementHandle(dt)
   local penalty = 0
-  if love.mouse.isDown(1) and guns.equipped == guns['chaingun'] and canShoot then
+  if love.mouse.isDown(1) and guns.equipped.tween and canShoot then
     penalty = guns.equipped.movementPenalty
+    guns.equipped.tween:update(dt)
+    guns.equipped.animation:update(dt/guns.equipped.frameTime.v)
+  elseif guns.equipped.tween then
+    guns.equipped.tween:reset()
   end
   
   if love.keyboard.isDown("a") then

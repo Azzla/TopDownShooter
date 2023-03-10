@@ -3,11 +3,19 @@ local zomAssets = {}
 zomAssets.zombieFrame = love.graphics.newImage('sprites/zombies/zombie.png')
 zomAssets.zombieSprite = love.graphics.newImage('sprites/zombies/zombieWalk.png')
 
+zomAssets.zombieShootFrame = love.graphics.newImage('sprites/zombies/zombieShoot.png')
+zomAssets.zombieShootSprite = love.graphics.newImage('sprites/zombies/zombieShootWalk.png')
+
 zomAssets.bigZombieFrame = love.graphics.newImage('sprites/zombies/zombieBig.png')
 zomAssets.bigZombieSprite = love.graphics.newImage('sprites/zombies/zombieBigWalk.png')
 
 zomAssets.smallZombieFrame = love.graphics.newImage('sprites/zombies/zombieSmall.png')
 zomAssets.smallZombieSprite = love.graphics.newImage('sprites/zombies/zombieSmallWalk.png')
+
+zomAssets.zombieBullet = love.graphics.newImage('sprites/zombies/bullet.png')
+zomAssets.zombieSheet = love.graphics.newImage('sprites/zombies/bullet-sheet.png')
+zomAssets.zombieBulletGrid = anim8.newGrid(4, 4, 16, 4)
+zomAssets.bulletAnimation = anim8.newAnimation(zomAssets.zombieBulletGrid("1-4",1), 0.15)
 
 zombieTypes.normal = {
   damage        = 15,
@@ -36,6 +44,40 @@ zombieTypes.normal = {
   frame = zomAssets.zombieFrame,
   width = zomAssets.zombieFrame:getWidth(),
   height = zomAssets.zombieFrame:getHeight()
+}
+
+zombieTypes.shooter = {
+  damage        = 5,
+  bulletV       = 80,
+  fireRate      = 3,
+  hbScaleX      = 1,
+  hbScaleY      = 1,
+  hbOffsX       = 6,
+  hbOffsY       = -5,
+  pScale        = 3,
+  friction      = 12,
+  rotFactor     = 8,
+  rotActiveDist = -1,
+  collScale     = .8,
+  activeDist    = 80,
+  goldSpawn     = 8,
+  frameTime     = .12,
+  frameSize     = 15,
+  spriteGap     = 1,
+  
+  _health = function() return 9 * (1+math.ceil(round.difficulty/4)) end,
+  _killReward = function() return 500 + math.random(round.difficulty, math.ceil(round.difficulty*1.7)) end,
+  _speedMax = function() return 2.0 + math.random(0.0,round.difficulty/5) end,
+  _speedMin = function() return 1.2 + math.random(0.0,round.difficulty/5) end,
+  _spawn = function() return math.random(280,400) end,
+  
+  bulletSprite = zomAssets.zombieBullet,
+  bulletSheet = zomAssets.zombieSheet,
+  bulletAnimation = zomAssets.bulletAnimation,
+  sprite = zomAssets.zombieShootSprite,
+  frame = zomAssets.zombieShootFrame,
+  width = zomAssets.zombieShootFrame:getWidth(),
+  height = zomAssets.zombieShootFrame:getHeight()
 }
 
 zombieTypes.big = {

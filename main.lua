@@ -35,13 +35,11 @@ function love.load()
   require('sounds')
   loadSoundFX()
   require('menu')
-  require('prompts')
   require('guns')
   require('player')
   require('zombie')
   require('bullets')
   require('grenades')
-  require('melees')
   require('healthbar')
   require('rounds')
   require('shop')
@@ -64,7 +62,6 @@ function love.update(dt)
   end
   if round.gameState == 2 then
     TextManager.update(dt)
-    updatePromptAlpha(dt)
     updateShaderTimers(dt)
     updateCameraTimers(dt)
     cameraHandler(player.x, player.y, dt)
@@ -72,7 +69,7 @@ function love.update(dt)
     walkAnimation(dt)
     zombieUpdate(dt)
     bulletUpdate(dt)
-    updateMelee(dt)
+--    updateMelee(dt)
     autoShoot(dt)
     grenadeUpdate(dt)
     updateRounds(dt)
@@ -114,7 +111,7 @@ function love.draw()
     --Objects
     drawObjects()
     drawGuns()
-    drawMelee()
+--    drawMelee()
     
     --Player
     if shaders.damaged then love.graphics.setShader(damagedPlayerShader) end
@@ -141,14 +138,8 @@ function love.draw()
     drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
     
     local ret1,ret2 = cam:mousePosition()
-    --magical magics
-    local handDistance = math.sqrt(guns.equipped.bulletOffsX^2 + guns.equipped.bulletOffsY^2)
-    local handAngle    = player_angle() + math.atan2(guns.equipped.bulletOffsY, guns.equipped.bulletOffsX)
-    local handOffsetX  = handDistance * math.cos(handAngle)
-    local handOffsetY  = handDistance * math.sin(handAngle)
-    --magical magics
-    love.graphics.draw(reticle, ret1+handOffsetX, ret2+handOffsetY,nil,nil,nil,3,3)
-    
+    local offX,offY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY,player_angle())
+    love.graphics.draw(reticle, ret1+offX, ret2+offY,nil,nil,nil,3,3)
     love.graphics.setShader()
     
     cam:detach()
@@ -158,15 +149,15 @@ function love.draw()
     
     cam:attach()
     --Health
-    love.graphics.draw(round.uiBox3, origin, origin2Bot - 12)
-    player.healthBar.animation:draw(player.healthBar.sprite, origin - 1, origin2Bot - 14, nil, 5, 5)
-    love.graphics.draw(player.heartIcon, origin + 4, origin2Bot - 12, nil, nil, nil, 4)
+    love.graphics.draw(round.uiBox3, origin + 5, origin2Bot - 12)
+    player.healthBar.animation:draw(player.healthBar.sprite, origin + 4, origin2Bot - 14, nil, 5, 5)
+    love.graphics.draw(player.heartIcon, origin + 8, origin2Bot - 12, nil, nil, nil, 4)
     
     --Reload
-    love.graphics.printf(guns.equipped.currAmmo .. "/" .. guns.equipped.clipSize, origin - 24, origin2Bot - 34, 100, "right", nil, .8, .8)
-    love.graphics.draw(round.uiBox2, origin + 2, origin2Bot - 22)
-    drawReload(origin + 4, origin2Bot - 19, reloader.width, reloader.height)
-    love.graphics.draw(player.ammoIcon, origin + 7, origin2Bot - 23, nil, nil, nil, 6)
+    love.graphics.printf(guns.equipped.currAmmo .. "/" .. guns.equipped.clipSize, origin - 19, origin2Bot - 34, 100, "right", nil, .8, .8)
+    love.graphics.draw(round.uiBox2, origin + 7, origin2Bot - 22)
+    drawReload(origin + 9, origin2Bot - 19, reloader.width, reloader.height)
+    love.graphics.draw(player.ammoIcon, origin + 12, origin2Bot - 23, nil, nil, nil, 6)
     
     --Gold
     love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
@@ -265,6 +256,15 @@ end
 -------------------------
 --------UTILITIES--------
 -------------------------
+function offsetXY(x, y, pAngle)
+  local handDistance = math.sqrt(x^2 + y^2)
+  local handAngle    = pAngle + math.atan2(y, x)
+  local handOffsetX  = handDistance * math.cos(handAngle)
+  local handOffsetY  = handDistance * math.sin(handAngle)
+  
+  return handOffsetX,handOffsetY
+end
+
 function shallowCopy(original)
 	local copy = {}
 	for key, value in pairs(original) do
