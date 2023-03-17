@@ -17,7 +17,7 @@ function ParticleManager.tempNew(x, y, p, s, t) --spawns in a particular locatio
   pFX.x = x
   pFX.y = y
   pFX.psys = p
-  pFX.s = s
+  pFX.s = math.min(s, 5)
   pFX.dead = false
   ParticleManager.pTimer:after(t, function() pFX.dead = true end)
   

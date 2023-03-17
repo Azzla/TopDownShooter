@@ -54,6 +54,12 @@ table.insert(KEYPRESSED, function(key, scancode)
     
     switchWeapon('railgun')
     love.audio.play(soundFX.zoom)
+  elseif key == '9' and guns.autoshotgun.unlocked then
+    if not canReload and guns.equipped == guns.autoshotgun then return end
+    if guns.equipped == guns.autoshotgun then return end
+    
+    switchWeapon('autoshotgun')
+    love.audio.play(soundFX.pumpAction)
   end
   
   if round.gameState == 2 and canReload and key == 'r' then
@@ -70,7 +76,7 @@ function processGunSounds()
     screenShake(.15,.5)
     gunTimer:after(.4, function() love.audio.play(soundFX.pumpAction) end)
   elseif guns.equipped == guns['railgun'] then
-    screenShake(.35,.8)
+    screenShake(.25,.6)
   end
 end
 
@@ -80,7 +86,7 @@ function switchWeapon(str)
     guns.equipped.warm = false
     guns.equipped.isWarming = false
     warmingTimer:clear()
-    love.audio.stop(soundFX.warmup)
+    love.audio.stop(guns.equipped.warmSound)
     love.audio.stop(soundFX.firingWarm)
   end
   

@@ -94,27 +94,33 @@ table.insert(KEYPRESSED, function(key, scancode)
         round.difficulty = round.difficulty + 1
         love.audio.play(soundFX.roundStart)
         round.zombiesMaxSpawn = round.zombiesMaxSpawn + math.max(3, round.difficulty)
+      else
+        --remove stuff
+        if #zombies > 0 then
+          for i=#zombies,1,-1 do
+            local z = zombies[i]
+            z.dead = true
+          end
+        end
+        for i=#coins,1,-1 do
+          local c = coins[i]
+          c.dead = true
+        end
+        for i=#bullets,1,-1 do
+          local b = bullets[i]
+          b.dead = true
+        end
+        
+        round.zombiesSpawned = 0
+        round.currentKilled = 0
+        round.difficulty = round.difficulty + 1
+        if round.difficulty >= 10 and round.time ~= 9/round.difficulty then
+          round.time = 10/round.difficulty
+        end
+        love.audio.play(soundFX.roundStart)
+        round.zombiesMaxSpawn = round.zombiesMaxSpawn + math.max(3, round.difficulty)
       end
-      
-      --remove stuff
-      for i=#zombies,1,-1 do
-        local z = zombies[i]
-        world:remove(z)
-        table.remove(zombies, i)
-      end
-      for i=#coins,1,-1 do
-        local c = coins[i]
-        table.remove(coins, i)
-      end
-      
-      round.zombiesSpawned = 0
-      round.currentKilled = 0
-      round.difficulty = round.difficulty + 1
-      if round.difficulty >= 10 and round.time ~= 9/round.difficulty then
-        round.time = 10/round.difficulty
-      end
-      love.audio.play(soundFX.roundStart)
-      round.zombiesMaxSpawn = round.zombiesMaxSpawn + math.max(3, round.difficulty)
+
     elseif round.gameState == 3 then
       gold.total = gold.total + 1000
       love.audio.play(soundFX.makePurchase)
@@ -141,14 +147,14 @@ function resetRounds()
   if #zombies > 0 then
     for i=#zombies,1,-1 do
       local z = zombies[i]
-      world:remove(z)
+      HC.remove(z.coll)
       table.remove(zombies, i)
     end
   end
   if #bullets > 0 then
     for i=#bullets,1,-1 do
       local b = bullets[i]
-      world:remove(b)
+      HC.remove(b.coll)
       table.remove(bullets, i)
     end
   end
@@ -157,13 +163,6 @@ function resetRounds()
   guns.sniper.currAmmo = guns.sniper.clipSize
   guns.shotgun.currAmmo = guns.shotgun.clipSize
   guns.equipped = guns.pistol
-  
-  local items, length = world:getItems()
-  for i,item in pairs(items) do
-    if item.isZombie or item.isBullet or item.isGrenade then
-      world:remove(item)
-    end
-  end
 
   gold.total = 0
   round.difficulty = 1

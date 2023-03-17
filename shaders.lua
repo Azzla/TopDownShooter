@@ -31,7 +31,7 @@ function drawNightShader()
   nightShader:send("num_lights", 1)
   nightShader:send("lights[0].position", {screen_width / 2, screen_height / 2})
   nightShader:send("lights[0].diffuse", {1.0, 1.0, 1.0})
-  nightShader:send("lights[0].power", 45)
+  nightShader:send("lights[0].power", 25)
   
 end
 

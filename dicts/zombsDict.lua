@@ -66,7 +66,7 @@ zombieTypes.shooter = {
   spriteGap     = 1,
   
   _health = function() return 9 * (1+math.ceil(round.difficulty/4)) end,
-  _killReward = function() return 500 + math.random(round.difficulty, math.ceil(round.difficulty*1.7)) end,
+  _killReward = function() return 5 + math.random(round.difficulty, math.ceil(round.difficulty*1.7)) end,
   _speedMax = function() return 2.0 + math.random(0.0,round.difficulty/5) end,
   _speedMin = function() return 1.2 + math.random(0.0,round.difficulty/5) end,
   _spawn = function() return math.random(280,400) end,

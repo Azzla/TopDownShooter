@@ -80,12 +80,13 @@ end
 --Railgun
 Particles.railgun = {}
 Particles.railgun.p = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)
-Particles.railgun.p:setParticleLifetime (.08, .18)
-Particles.railgun.p:setSizes(1,.8)
-Particles.railgun.p:setSpeed(150)
-Particles.railgun.p:setColors(1, 1, 1, 1, rgb(183), rgb(231), rgb(246), 1)
+Particles.railgun.p:setParticleLifetime (.1, .18)
+Particles.railgun.p:setSizes(.75,1,.75)
+Particles.railgun.p:setSpeed(350,450)
+Particles.railgun.p:setSizeVariation(.5)
+Particles.railgun.p:setColors(1, 1, 1, 1, rgb(278), rgb(75), rgb(43), 1)
 Particles.railgun.fire = function(pAngle)
-  return { math.random(5,10), pAngle - math.pi/2 - math.pi/12, math.pi/6, 1 }
+  return { math.random(15,25), pAngle - math.pi/2 - math.pi/12, math.pi/6, 1 }
 end
 
 return Particles

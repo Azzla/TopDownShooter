@@ -4,7 +4,9 @@ dashSystem:setParticleLifetime (.05, .3)
 dashSystem:setSizes(1)
 dashSystem:setSpeed(60)
 
-player = {}
+
+local sprite = love.graphics.newImage('sprites/Robot.png')
+player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .75)
 
 --powerups
 player.isInvincible = false
@@ -31,8 +33,6 @@ player.ammoIcon = love.graphics.newImage('sprites/energyIcon.png')
 player.canDash = true
 player.dashP = PlayerParticleManager.new(player.x, player.y, dashSystem:clone(), 1)
 player.isRecharge = true
-
-world:add(player, player.x - (player.w/2 * .8), player.y - (player.h/2 * .8), player.w * .8, player.h * .8)
 
 table.insert(KEYPRESSED, function(key, scancode)
   if key == 'space' then
@@ -149,18 +149,32 @@ function movementHandle(dt)
   player.vy = player.vy * (1 - math.min(dt*player.friction, .5))
   
   --Collisions--
-  local goalX = player.x + player.vx * dt
-  local goalY = player.y + player.vy * dt
-  local actualX, actualY, cols, length = world:move(player, goalX - (player.w/2 * .8), goalY - (player.h/2 * .8), playerFilter)
-  player.x = actualX + (player.w/2 * .8)
-  player.y = actualY + (player.h/2 * .8)
-  
-  for i=1,length do
-    local other = cols[i].other
-    if other.isZombie then
-      collideWithZombie(other)
+  local collisions = HC.collisions(player)
+  for other, separating_vector in pairs(collisions) do
+    --zombie
+    if other.parent.isZombie then
+      local collides, dx, dy = player:collidesWith(other)
+      if collides and other.parent.collideable then
+        collideWithZombie(other.parent)
+      end
+    end
+    
+    --bullet
+    if other.parent.isBullet then
+      local collides, dx, dy = player:collidesWith(other)
+      if collides and other.parent.isEnemyBullet and not other.parent.dead then
+        collideBulletWithPlayer(other.parent)
+      end
     end
   end
+
+  local goalX = player.x + player.vx * dt
+  local goalY = player.y + player.vy * dt
+  player.x = goalX
+  player.y = goalY
+  
+  player:moveTo(goalX,goalY)
+  player:setRotation(player_angle())
 end
 
 dashTimer = globalTimer.new()
@@ -169,11 +183,24 @@ dashTimer:every(2.7, function()
   player.isRecharge = true
 end)
 
+function collideBulletWithPlayer(b)
+  --Damage
+  player.health = player.health - b.damage
+  TextManager.playerDmgPopup(player.x, player.y, b)
+  shaders.damaged = true
+  shaderTimer:after(.1, function() shaders.damaged = false end)
+  
+  love.audio.play(soundFX.player_hit)
+
+  b.dead = true
+end
+
 function collideWithZombie(zom)
   zom.dead = true
   zom.collideable = false
   if not player.isInvincible then
     player.health = player.health - zom.damage
+    love.audio.play(soundFX.player_hit)
     TextManager.playerDmgPopup(player.x, player.y, zom)
     screenShake(.15, 1)
     shaders.damaged = true

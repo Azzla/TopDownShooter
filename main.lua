@@ -25,8 +25,7 @@ function love.load()
   globalTimer = require('libs/hump/timer')
   tween = require('libs/tween/tween')
   anim8 = require('libs/anim8/anim8')
-  bump = require('libs/bump/bump')
-  world = bump.newWorld(32)
+  HC = require('libs/hardoncollider')
   
   --modules
   KEYPRESSED={}
@@ -36,6 +35,7 @@ function love.load()
   loadSoundFX()
   require('menu')
   require('guns')
+  inventory = require('inventoryManager').init(KEYPRESSED)
   require('player')
   require('zombie')
   require('bullets')
@@ -132,13 +132,28 @@ function love.draw()
     --In-Game Text
     TextManager.drawGame()
     
+    
+    
+    
+    
+    ----------------
 --    collisionDebug()
-
+    ----------------
+    
+    
+    
+    
+    
+    
+    
     --Energy
     drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
     
     local ret1,ret2 = cam:mousePosition()
-    local offX,offY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY,player_angle())
+    local fix = 0
+    if guns.equipped == guns['railgun'] then fix = 60 end
+    local offX,offY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY+fix,player_angle())
+    
     love.graphics.draw(reticle, ret1+offX, ret2+offY,nil,nil,nil,3,3)
     love.graphics.setShader()
     
@@ -162,6 +177,9 @@ function love.draw()
     --Gold
     love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
     love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
+    
+    --Inventory
+    inventory:draw(originXCenter, origin2)
     
     --UI Text
     TextManager.drawUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter)
@@ -244,18 +262,28 @@ function drawObjects()
 end
 
 function collisionDebug()
-  local items, length = world:getItems()
   love.graphics.setColor(1,0,0,1)
-  for i, item in pairs(items) do
-    local x,y,w,h = world:getRect(item)
-    love.graphics.rectangle('line', x,y,w,h)
+  for i,b in ipairs(bullets) do
+    b.coll:draw('line')
   end
+  for i,z in ipairs(zombies) do
+    z.coll:draw('line')
+  end
+  for i,g in ipairs(grenades) do
+    g.coll:draw('line')
+  end
+  player:draw('line')
   love.graphics.setColor(1,1,1,1)
 end
 
 -------------------------
 --------UTILITIES--------
 -------------------------
+function true_randomID(value)
+--  math.randomseed(os.time())
+  return value / math.random(99999,999999)
+end
+
 function offsetXY(x, y, pAngle)
   local handDistance = math.sqrt(x^2 + y^2)
   local handAngle    = pAngle + math.atan2(y, x)

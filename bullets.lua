@@ -21,7 +21,9 @@ bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
 function drawBullets()
-  local offX,offY = offsetXY(guns.equipped.bulletOffsX, guns.equipped.bulletOffsY, player_angle())
+  local fix = 0
+  if guns.equipped == guns['railgun'] then fix = 60 end
+  local offX,offY = offsetXY(guns.equipped.bulletOffsX, guns.equipped.bulletOffsY + fix, player_angle())
   BulletParticleManager.draw(guns.equipped.pSys, player.x + offX, player.y + offY, 1)
   
   for i,b in ipairs(bullets) do
@@ -41,6 +43,9 @@ end
 function fire()
   coolingDown = true
   cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
+  if guns.equipped == guns['railgun'] then
+    love.audio.play(guns.equipped.warmSound)
+  end
   
   processGunSounds()
   guns.equipped.currAmmo = guns.equipped.currAmmo - 1
@@ -59,7 +64,7 @@ function autoShoot(dt)
         if guns.equipped.hasWarmup and not guns.equipped.isWarming then
           --warmup stuff
           guns.equipped.isWarming = true
-          love.audio.play(soundFX.warmup)
+          love.audio.play(guns.equipped.warmSound)
           warmingTimer:after(guns.equipped.warmTime, function()
             guns.equipped.warm = true
             if guns.equipped == guns['chaingun'] then
@@ -68,36 +73,33 @@ function autoShoot(dt)
           end)
         end
         
-        if guns.equipped.warm or not guns.equipped.hasWarmup then
+        if guns.equipped.warm or not guns.equipped.hasWarmup and not guns.equipped.bullets then
           fire()
+        end
+        if guns.equipped.bullets then
+          fireBullets()
         end
       end
     else reload() end
   end
 end
 
-function spawnBullet(damageUp, dir, offsX, offsY)
+function spawnBullet(damageUp, direction, offsX, offsY)
   local bullet = {}
   
   bullet.isBullet = true
   bullet.x = player.x + offsX
   bullet.y = player.y + offsY
-  bullet.id = round.bulletCount/1000
-  bullet.direction = dir
+  bullet.id = true_randomID(round.bulletCount)
+  bullet.direction = direction
   bullet.sprite = guns.equipped.bulletSprite
   bullet.frame = bullet.sprite
-  bullet.origX = bullet.sprite:getWidth()
+  bullet.origX = bullet.sprite:getWidth()/2
   bullet.origY = bullet.sprite:getHeight()/2
   bullet.damage = guns.equipped.dmg
   bullet.falloff = guns.equipped.falloff
+  bullet.pierceFalloff = guns.equipped.pierceFalloff
   if damageUp then bullet.damage = bullet.damage * 2 end
-  if guns.equipped.collision then
-    bullet.collW = 4
-    bullet.collY = 4
-  else
-    bullet.collW = 2
-    bullet.collY = 2
-  end
   bullet.critChance = guns.equipped.critChance
   bullet.speed = guns.equipped.v
   bullet.pierce = guns.equipped.pierce
@@ -115,7 +117,10 @@ function spawnBullet(damageUp, dir, offsX, offsY)
   end
   BulletParticleManager.spawn(guns.equipped.pSys, unpack(guns.equipped.pSpread(player_angle())))
   
-  world:add(bullet, bullet.x, bullet.y, bullet.collW, bullet.collY)
+  bullet.coll = HC.rectangle(bullet.x - bullet.origX, bullet.y - bullet.origY, guns.equipped.bulletSprite:getWidth(), guns.equipped.bulletSprite:getHeight())
+  bullet.coll.parent = bullet
+  bullet.coll:setRotation(bullet.direction)
+  
   table.insert(bullets, bullet)
 end
 
@@ -141,7 +146,9 @@ function spawnBulletZombie(z)
   
   --BulletParticleManager.spawn(guns.equipped.pSys, unpack(guns.equipped.pSpread(player_angle())))
   
-  world:add(bullet, bullet.x, bullet.y, 2, 2)
+  bullet.coll = HC.circle(z.x, z.y, 2)
+  bullet.coll.parent = bullet
+  
   table.insert(bullets, bullet)
 end
 
@@ -150,7 +157,7 @@ function reload()
     guns.equipped.warm = false
     guns.equipped.isWarming = false
     warmingTimer:clear()
-    love.audio.stop(soundFX.warmup)
+    love.audio.stop(guns.equipped.warmSound)
     love.audio.stop(soundFX.firingWarm)
   end
   
@@ -188,32 +195,26 @@ function bulletUpdate(dt)
       
       local goalX = b.x + math.cos(b.direction - math.pi/2) * b.speed * dt
       local goalY = b.y + math.sin(b.direction - math.pi/2) * b.speed * dt
-      local actualX, actualY, cols, length = world:move(b, goalX, goalY, bulletFilter)
-      b.x, b.y = actualX, actualY
+      b.coll:moveTo(goalX,goalY)
+      
+      b.x, b.y = goalX, goalY
       
       if b.isEnemyBullet and not b.dead then
         b.anim:update(dt)
-        for i=1,length do
-          local other = cols[i].other
-          if other.isPlayer then
-            collideBulletWithPlayer(b)
-          end
-        end
       end
     end
     
     for i=#bullets,1,-1 do
       local b = bullets[i]
+      --out of bounds
       if b.x < 0 or b.y < 0 or b.x > love.graphics.getWidth() or b.y > love.graphics.getHeight() then
-        world:remove(b)
+        HC.remove(b.coll)
         table.remove(bullets, i)
       end
-    end
-
-    for i=#bullets,1,-1 do
-      local b = bullets[i]
+      
+      --dead flag
       if b.dead == true then
-        world:remove(b)
+        HC.remove(b.coll)
         table.remove(bullets, i)
       end
     end
@@ -236,70 +237,6 @@ function criticalHit(chance)
   return false
 end
 
-function collideBulletWithPlayer(b)
-  --Damage
-  player.health = player.health - b.damage
-  TextManager.playerDmgPopup(player.x, player.y, b)
-  shaders.damaged = true
-  shaderTimer:after(.1, function() shaders.damaged = false end)
-  
-  love.audio.stop(soundFX.zombies.hit)
-  love.audio.play(soundFX.zombies.hit)
-
-  b.dead = true
-end
-
-function collideWithBullet(b, z)
-  if b.id ~= z.id then
-    BulletParticleManager.spawn(z.p.psys, math.random(12,24), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
-    
-    z.zombieDamaged = true
-    z.healthBar.isHidden = false
-    shaderTimer:after(.08, function() z.zombieDamaged = false end)
-    
-    --Damage
-    if criticalHit(b.critChance) then
-      local newDmg = b.damage * 3
-      
-      z.health = z.health - newDmg
-      TextManager.bulletDmgPopup(newDmg, z)
-    else
-      
-      z.health = z.health - b.damage
-      TextManager.bulletDmgPopup(b.damage, z)
-    end
-    
-    z.id = b.id
-    z.vx = z.vx * b.knockback
-    z.vy = z.vy * b.knockback
-    z.speed = z.speed * b.slowdown
-    
-    love.audio.stop(soundFX.zombies.hit)
-    love.audio.play(soundFX.zombies.hit)
-
-    if z.health <= 0 then
-      z.collideable = false
-      z.dead = true
-      
-      --death effects
-      local deathP = BulletParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 3 + ((b.speed - 250) / 100), 3)
-      BulletParticleManager.spawn(deathP.psys, math.random(24,36), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
-      spawnBlood(z.x,z.y)
-      
-      round.totalKilled = round.totalKilled + 1
-      round.currentKilled = round.currentKilled + 1
-      spawnKillReward(z)
-      powerupChance(z)
-    end
-
-    if b.pierce == 0 then b.dead = true
-    else
-      b.pierce = b.pierce - 1
-      b.damage = b.damage - 7
-    end
-  end
-end
-
 function spawnBlood(x,y)
   local bl = {}
   bl.sprite = bloodsplat
@@ -318,6 +255,11 @@ end
 
 function fireBullets()
   if guns.equipped.hasWarmup then return end
+  --check for cooldown
+  if guns.equipped.cooldown > 0 then
+    coolingDown = true
+    cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
+  end
   
   processGunSounds()
   BulletParticleManager.spawn(guns.equipped.pSys, math.random(6,12), player_angle() - math.pi/2 - math.pi/8, math.pi/4, 1)
@@ -349,17 +291,11 @@ function love.mousereleased(x, y, button)
       if guns.equipped.hasWarmup then
         guns.equipped.warm = false
         guns.equipped.isWarming = false
+        coolingDown = false
         warmingTimer:clear()
-        love.audio.stop(soundFX.warmup)
+        love.audio.stop(guns.equipped.warmSound)
         love.audio.stop(soundFX.firingWarm)
-      end
-      
-      if guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
-        --check for cooldown
-        if guns.equipped.cooldown > 0 then
-          coolingDown = true
-          cooldownTimer:after(guns.equipped.cooldown, function() coolingDown = false end)
-        end
+      elseif guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
         fireBullets()
         
         if guns.equipped.currAmmo == 0 then reload() end

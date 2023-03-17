@@ -20,9 +20,10 @@ explosionSystem:setSpeed(60,80)
 function spawnGrenade()
   local grenade = {}
   grenade.isGrenade = true
+  grenade.canCollide = true
   grenade.x = player.x
   grenade.y = player.y
-  grenade.v = 100
+  grenade.v = 130
   grenade.direction = player_angle()
   grenade.vx = math.cos(grenade.direction - math.pi/2) * grenade.v
   grenade.vy = math.sin(grenade.direction - math.pi/2) * grenade.v
@@ -35,6 +36,8 @@ function spawnGrenade()
   grenade.bulletCollisions = true
   grenade.time = .8
   grenade.timer = grenadeTimer:new()
+  grenade.coll = HC.circle(grenade.x, grenade.y, grenade.sprite:getWidth()/2)
+  grenade.coll.parent = grenade
   
   grenade.explode = function()
     grenade.timer:clear()
@@ -76,15 +79,8 @@ function spawnGrenade()
   
   grenade.timer:after(grenade.time, grenade.explode)
   
-  world:add(grenade, grenade.x - grenadeSprite:getWidth()/2, grenade.y - grenadeSprite:getHeight()/2, grenadeSprite:getWidth(), grenadeSprite:getHeight())
+--  world:add(grenade, grenade.x - grenadeSprite:getWidth()/2, grenade.y - grenadeSprite:getHeight()/2, grenadeSprite:getWidth(), grenadeSprite:getHeight())
   table.insert(grenades, grenade)
-end
-
-local grenadeFilter = function(item, other)
-  if other.isBullet then return 'cross'
-  elseif other.isGrenade then return nil
-  elseif other.isPlayer then return nil
-  elseif other.isZombie then return 'bounce' end
 end
 
 function drawGrenades()
@@ -106,30 +102,44 @@ function grenadeUpdate(dt)
     
     local goalX = g.x + g.vx * dt
     local goalY = g.y + g.vy * dt
-    local actualX, actualY, cols, length = world:move(g, goalX - grenadeSprite:getWidth()/2, goalY - grenadeSprite:getHeight()/2, grenadeFilter)
-    g.x, g.y = actualX + grenadeSprite:getWidth()/2, actualY + grenadeSprite:getHeight()/2
+    g.coll:moveTo(goalX,goalY)
+    g.x, g.y = goalX,goalY
     
-    for i=1,length do
-      local other = cols[i].other
-      if other.isBullet then
+    --Collisions--
+  local collisions = HC.collisions(g.coll)
+  for other, separating_vector in pairs(collisions) do
+    --zombie
+    if other.parent and other.parent.isZombie then
+      local collides, dx, dy = g.coll:collidesWith(other)
+      if collides and other.parent.collideable and g.canCollide == true then
+        g.canCollide = false
+        
+        --TODO stuff
+        g.rotFactor = g.rotFactor / 2
+--        if (dx < 0 and g.vx > 0) or (dx > 0 and g.vx < 0) then
+--          g.vx = -g.vx * .01
+--        end
+--        if (dy < 0 and g.vy > 0) or (dy > 0 and g.vy < 0) then
+--          g.vy = -g.vy * .01
+--        end
+      end
+    end
+    
+    --bullet
+    if other.parent and other.parent.isBullet then
+      local collides, dx, dy = g.coll:collidesWith(other)
+      if collides and other.parent and not other.parent.dead then
+        
+        --do stuff
         if g.bulletCollisions then
           g.explode()
           g.bulletCollisions = false
         end
-        other.dead = true
-      elseif other.isZombie then
-        g.rotFactor = g.rotFactor / 2
+        other.parent.dead = true
         
-        local nx, ny = cols[i].normal.x, cols[i].normal.y
-        if (nx < 0 and g.vx > 0) or (nx > 0 and g.vx < 0) then
-          g.vx = -g.vx * .01
-        end
-
-        if (ny < 0 and g.vy > 0) or (ny > 0 and g.vy < 0) then
-          g.vy = -g.vy * .01
-        end
       end
     end
+  end
     
     g.rotation = g.rotation + math.pi * g.rotFactor * dt
   end
@@ -140,7 +150,7 @@ function grenadeUpdate(dt)
   for i=#grenades,1,-1 do
     local g = grenades[i]
     if g.x < 0 or g.y < 0 or g.x > love.graphics.getWidth() or g.y > love.graphics.getHeight() then
-      world:remove(g)
+--      world:remove(g)
       table.remove(grenades, i)
     end
   end
@@ -148,7 +158,7 @@ function grenadeUpdate(dt)
   for i=#grenades,1,-1 do
     local g = grenades[i]
     if g.dead then
-      world:remove(g)
+--      world:remove(g)
       table.remove(grenades, i)
     end
   end
