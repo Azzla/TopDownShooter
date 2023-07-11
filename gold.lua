@@ -5,6 +5,8 @@ gold.total = 0
 gold.bigSprite = love.graphics.newImage('sprites/coinBig.png')
 coins = {}
 
+expTotal = 0
+
 copperSprite = love.graphics.newImage('sprites/coins/coinCopper.png')
 copperSheet = love.graphics.newImage('sprites/coins/coinCopper-sheet.png')
 silverSprite = love.graphics.newImage('sprites/coins/coinSilver.png')
@@ -18,7 +20,6 @@ azureSheet = love.graphics.newImage('sprites/coins/coinAzure-sheet.png')
 rubySprite = love.graphics.newImage('sprites/coins/coinRuby.png')
 rubySheet = love.graphics.newImage('sprites/coins/coinRuby-sheet.png')
 
-
 local values = {
   copper = 1,
   silver = 3,
@@ -29,55 +30,32 @@ local values = {
 }
 local collectionDist = 6
 
-coinAlpha = { alpha = 1 }
-targetCoinAlpha = { alpha = 0 }
-coinTween = tween.new(.5, coinAlpha, targetCoinAlpha)
-local flag = true
-
-function updateGold(dt)
-  if round.gameState == 2 then
-    for i,c in ipairs(coins) do
-      if c.anim then c.anim:update(dt) end
-      local coinDistance = distanceBetween(c.x, c.y, player.x, player.y)
+function updateGold(dt, magnet)
+  for i,c in ipairs(coins) do
+    if c.anim then c.anim:update(dt) end
+    local coinDistance = distanceBetween(c.x, c.y, player.x, player.y)
+    
+    if coinDistance > collectionDist and coinDistance < (6 * magnet) then
+      c.x = c.x + math.cos(zombie_angle_wrld(c)) * c.speed * dt
+      c.y = c.y + math.sin(zombie_angle_wrld(c)) * c.speed * dt
+    elseif coinDistance < collectionDist then
+      gold.total = gold.total + c.value
+      TextManager.collectCoinPopup(c.x, c.y, tostring(c.value))
       
-      if coinDistance > collectionDist and coinDistance < (25 * shop.skills.magnet) then
-        c.x = c.x + math.cos(zombie_angle_wrld(c)) * c.speed * dt
-        c.y = c.y + math.sin(zombie_angle_wrld(c)) * c.speed * dt
-      elseif coinDistance < collectionDist then
-        gold.total = gold.total + c.value
-        TextManager.collectCoinPopup(c.x, c.y, tostring(c.value))
-        
-        c.collected = true
-        love.audio.play(soundFX.collectCoin)
-      end
+      c.collected = true
+      love.audio.play(soundFX.collectCoin)
     end
-    
-    for i=#coins,1,-1 do
-      local c = coins[i]
-      if c.collected == true then
-        table.remove(coins, i)
-      end
+  end
+  
+  for i=#coins,1,-1 do
+    local c = coins[i]
+    if c.collected == true then
+      table.remove(coins, i)
     end
-    
-    if round.isDespawning then
-      if coinAlpha.alpha <= 1 and flag then
-        coinTween:update(dt)
-        if coinAlpha.alpha == 0 then flag = false end
-      end
-      if coinAlpha.alpha >= 0 and not flag then
-        coinTween:update(-dt)
-        if coinAlpha.alpha == 1 then flag = true end
-      end
-      
-    elseif not round.isDespawning and coinAlpha.alpha ~= 1 then coinAlpha.alpha = 1 end
-    
-  elseif round.gameState == 1 then
-    coins = {}
   end
 end
 
 function drawCoins()
-  love.graphics.setColor(1,1,1,coinAlpha.alpha)
   for i,c in ipairs(coins) do
     if c.anim then
       c.anim:draw(c.sheet, c.x, c.y, nil, nil, nil, 2, 2)
@@ -85,7 +63,6 @@ function drawCoins()
       love.graphics.draw(c.sprite, c.x, c.y, nil, nil, nil, 2, 2)
     end
   end
-  love.graphics.setColor(1,1,1,1)
 end
 
 function spawnCoin(obj, value, sprite, spriteSheet)
@@ -96,7 +73,7 @@ function spawnCoin(obj, value, sprite, spriteSheet)
   coin.sprite = sprite
   coin.collected = false
   coin.value = value
-  coin.speed = math.random(90+math.ceil(shop.skills.magnet*4),170+math.ceil(shop.skills.magnet*4))
+  coin.speed = math.random(90, 170)
   coin.sheet = spriteSheet
   coin.grid = anim8.newGrid(4,4,16,4)
   coin.anim = anim8.newAnimation(coin.grid('1-4', 1), .06)
@@ -104,7 +81,7 @@ function spawnCoin(obj, value, sprite, spriteSheet)
   table.insert(coins, coin)
 end
 
-function spawnKillReward(zombie)
+function spawnGoldReward(zombie)
   while zombie.killReward >= values.ruby do
     spawnCoin(zombie, values.ruby, rubySprite, rubySheet)
     zombie.killReward = zombie.killReward - values.ruby

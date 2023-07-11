@@ -18,12 +18,12 @@ local target = { a = 0 }
 local flag = false
 local textAlphaTween = tween.new(.5, alpha, target)
 
-function TextManager.update(dt)
+function TextManager.update(dt, game)
   Typo.update(dt)
   gPopupManager:update(dt)
   TextManager.timer:update(dt)
   
-  if round.isDespawning then
+  if game.isDespawning then
     if alpha.a <= 1 and flag then
       textAlphaTween:update(dt)
       if alpha.a == 0 then flag = false end
@@ -32,7 +32,7 @@ function TextManager.update(dt)
       textAlphaTween:update(-dt)
       if alpha.a == 1 then flag = true end
     end
-  elseif not round.isDespawning and alpha.a ~= 1 then alpha.a = 1 end
+  elseif not game.isDespawning and alpha.a ~= 1 then alpha.a = 1 end
 end
 
 function TextManager.drawGame()
@@ -43,7 +43,7 @@ function TextManager.drawUI(o,o2,oB,oR,oXC,oYC)
   TextManager.introText(oXC, o2)
   
   if promptsRan.drops then
-    Typo.draw(oR - 150, oB - 10, alpha.a)
+    Typo.draw(oR - 75, oB - 10, alpha.a)
     love.graphics.setColor(1,1,1,1)
   end
 end
@@ -114,9 +114,27 @@ function TextManager.collectCoinPopup(x, y, str)
       scaleX = .35,
       scaleY = .35,
       blendMode = 'add',
-      fadeOut = {start = .2, finish = .4},
+      fadeOut = {start = .3, finish = .4},
       dX = 0,
       dY = -10,
+      duration = .4
+  })
+end
+
+function TextManager.collectXPPopup(x, y, str)
+  gPopupManager:addPopup(
+  {
+      text = '+'..str,
+      font = pixelFont,
+      color = {r = 1, g = .1, b = 1, a = 1},
+      x = x,
+      y = y,
+      scaleX = .35,
+      scaleY = .35,
+      blendMode = 'add',
+      fadeOut = {start = .3, finish = .4},
+      dX = math.random(-10,10),
+      dY = math.random(-10,10),
       duration = .4
   })
 end
@@ -161,7 +179,7 @@ function TextManager.introText(oXC, o2)
 end
 
 function TextManager.dropsDespawning(time)
-  local index = Typo.new("Round Complete - Drops Despawning...", time, 0.01, 500, 'left', .5, pixelFont, { 255, 255, 255 })
+  local index = Typo.new("Round Complete...", time, 0.01, 500, 'left', .5, pixelFont, { 255, 255, 255 })
   
   promptsRan.drops = true
   TextManager.timer:after(time, function()

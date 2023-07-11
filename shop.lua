@@ -1,234 +1,225 @@
 local shopButtonManager = require('buttonManager')
 
-shop = {}
-shop.currentScreen = 1 --general tab 
-local shopButtonsCreated = false
-local shopButtons = nil
-local shopTimer = globalTimer.new()
-local nextClicked = false
-shopCooldown = false
-
-shop.buttonSprite = love.graphics.newImage('sprites/ui/shopButton.png')
-shop.buttonSpriteHot = love.graphics.newImage('sprites/ui/shopButtonHot.png')
-shop.continue = love.graphics.newImage('sprites/ui/UIBox1.png')
-shop.continueHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
-
-shop.display = love.graphics.newImage('sprites/ui/UIShop.png')
-shop.displayHot = love.graphics.newImage('sprites/ui/UIShopHot.png')
-shop.textScale = 1/2
-shop.x = 0
-shop.y = 0
+local shop = {}
 shop.skills = {}
-shop.skills.price = 10
+shop.skills.price = 100
 shop.skills.grenades = 100
-shop.skills.damage = 6
+shop.skills.damage = 0
 shop.skills.damPurch = 0
 shop.skills.speedPurch = 0
-shop.skills.ratePurch = 0
+shop.skills.reloadPurch = 0
 shop.skills.magPurch = 0
 shop.skills.ammoPurch = 0
-shop.skills.maxAmmo = 6
-shop.skills.reload = 2.5
+shop.skills.maxAmmo = 0
+shop.skills.reload = 0
 shop.skills.speed = 0
 shop.skills.magnet = 1
 shop.rate = 1
 
---define functions for purchasing skills
-skills = {
-  function()
-    if gold.total >= shop.skills.price then
-      shop.skills.damage = shop.skills.damage + 2
-      shop.skills.damPurch = shop.skills.damPurch + 1
-      purchase()
-    end
-  end,
-  function()
-    if gold.total >= shop.skills.price then
-      shop.skills.speed = shop.skills.speed + 10
-      shop.skills.speedPurch = shop.skills.speedPurch + 1
-      purchase()
-    end
-  end,
-  function()
-    if gold.total >= shop.skills.price then
-      shop.skills.reload = shop.skills.reload * .98
-      updateTweens()
-      shop.skills.ratePurch = shop.skills.ratePurch + 1
-      purchase()
-    end
-  end,
-  function()
-    if gold.total >= shop.skills.price then
-      shop.skills.magnet = shop.skills.magnet * 1.05
-      shop.skills.magPurch = shop.skills.magPurch + 1
-      purchase()
-    end
-  end,
-  function()
-    if gold.total >= shop.skills.price then
-      shop.skills.maxAmmo = shop.skills.maxAmmo + 2
-      shop.skills.ammoPurch = shop.skills.ammoPurch + 1
-      purchase()
-    end
-  end,
-  function()
-    if gold.total >= shop.skills.price and player.health < player.healthBar.totalHealth then
-      addPurchasedHealth()
-      purchase()
-    end
-  end
-}
+function shop:init()
+  self.btnsCreated = false
+  self.buttons = nil
+  self.timer = globalTimer.new()
+  self.nextClicked = false
+  self.cooldown = false
+  self.currentScreen = 1
 
-upgrades = {
-  function()
-    guns.shotgun.unlocked = true
-    nextRound()
-    love.audio.play(soundFX.shotgun)
-  end,
-  function()
-    guns.sniper.unlocked = true
-    nextRound()
-    love.audio.play(soundFX.sniper)
-  end,
-  function()
-    guns.uzi.unlocked = true
-    nextRound()
-    love.audio.play(soundFX.powerup)
-  end
-}
+  self.buttonSprite = love.graphics.newImage('sprites/ui/shopButton.png')
+  self.buttonSpriteHot = love.graphics.newImage('sprites/ui/shopButtonHot.png')
+  self.uiBox3 = love.graphics.newImage('sprites/ui/UIBox3.png')
+  self.continue = love.graphics.newImage('sprites/ui/UIBox1.png')
+  self.continueHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
+  self.display = love.graphics.newImage('sprites/ui/UIShop.png')
+  self.displayHot = love.graphics.newImage('sprites/ui/UIShopHot.png')
+  self.offsetX = self.display:getWidth() / 8
+  self.offsetY = self.display:getHeight() / 8
+  
+  self.icons = {
+    ammo = love.graphics.newImage('sprites/ui/ammo.png'),
+    reload = love.graphics.newImage('sprites/ui/reload.png'),
+    speed = love.graphics.newImage('sprites/ui/speed.png'),
+    damage = love.graphics.newImage('sprites/ui/damage.png'),
+    accuracy = love.graphics.newImage('sprites/ui/accuracy.png'),
+    magnet = love.graphics.newImage('sprites/ui/magnet.png'),
+    unpurchased = love.graphics.newImage('sprites/ui/unpurchased.png'),
+    purchased = love.graphics.newImage('sprites/ui/purchased.png')
+  }
+  
+  self.textScale = 1/2
+  self.x = 0
+  self.y = 0
 
-function shopUpdate(dt)
-  shopTimer:update(dt)
+  --define functions for purchasing skills
+  self.skillList = { "damPurch", "reloadPurch", "ammoPurch", "speedPurch", "magPurch" }
+  self.purchases = {
+    function()
+      if gold.total >= self.skills.price then
+        self.skills.damage = self.skills.damage + 1
+        self.skills.damPurch = self.skills.damPurch + 1
+        self:purchase()
+      end
+    end,
+      function()
+      if gold.total >= self.skills.price then
+        self.skills.reload = self.skills.reload + 1
+        self.skills.reloadPurch = self.skills.reloadPurch + 1
+        self:purchase()
+      end
+    end,
+      function()
+      if gold.total >= self.skills.price then
+        self.skills.maxAmmo = self.skills.maxAmmo + 1
+        self.skills.ammoPurch = self.skills.ammoPurch + 1
+        self:purchase()
+      end
+    end,
+    function()
+      if gold.total >= self.skills.price then
+        self.skills.speed = self.skills.speed + 20
+        self.skills.speedPurch = self.skills.speedPurch + 1
+        self:purchase()
+      end
+    end,
+    function()
+      if gold.total >= self.skills.price then
+        self.skills.magnet = self.skills.magnet * 1.20
+        self.skills.magPurch = self.skills.magPurch + 1
+        self:purchase()
+      end
+    end,
+    function()
+      if gold.total >= self.skills.price and player.health < player.healthBar.totalHealth then
+        addPurchasedHealth()
+        self:purchase()
+      end
+    end
+  }
+end
+
+function shop:update(dt)
+  self.timer:update(dt)
   --Check if upgrades maxed out
-  if not shopButtonsCreated then return end
-  for i=1,#shopButtons do
-    local b = shopButtons[i]
+  if not self.btnsCreated then return end
+  for i=1,#self.buttons do
+    local b = self.buttons[i]
     if not b then return end
-    if b.clicked >= 5 then
+    if b.clicked >= 20 then
       shopButtonManager.remove(i)
-      shopButtons = shopButtonManager.getButtons()
+      self.buttons = shopButtonManager.getButtons()
     end
   end
 end
 
-function nextRound()
-  if not nextClicked then
-    nextClicked = true
-    shopTimer:after(.1, function()
-      shopCooldown = false
-      resetShopButtons()
+function shop:draw()
+  cam:zoomTo(6)
+  cam:attach()
+  local ret1,ret2 = cam:mousePosition()
+  local origin,origin2,origin2Bot,originRight,originXCenter,originYCenter = cameraCoordinates(cam, 6)
+  
+  love.graphics.setShader(shopShader)
+  mainMap:drawLayer(mainMap.layers["Background"])
+  love.graphics.setShader()
+  
+  self:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
+--    displayUpgrades()
+  
+  cam:detach()
+  cam:zoomTo(currentZoom.zoom)
+end
+
+function shop:enter(previous)
+  self.backStateRef = previous
+end
+
+local function uiBox(skill, x, y, num)
+  if shop.skills[skill] < num then
+    love.graphics.draw(shop.icons.unpurchased, x, y)
+  elseif shop.skills[skill] >= num then
+    love.graphics.draw(shop.icons.purchased, x, y)
+  end
+end
+
+local function nextRound()
+  if not shop.nextClicked then
+    shop.nextClicked = true
+    shop.timer:after(.1, function()
+      shop.cooldown = false
+      calcBonuses(shop.skills)
       
-      round.zombiesMaxSpawn = round.zombiesMaxSpawn + math.max(3, round.difficulty)
-      round.difficulty = round.difficulty + 1
-      round.gameState = 2
       soundFX.music:setVolume(.3)
-      nextClicked = false
+      shop.nextClicked = false
+      Gamestate.switch(shop.backStateRef)
     end)
   end
 end
 
-function generalTab()
-  
-end
-
-local offsetX = shop.display:getWidth() / 8
-local offsetY = shop.display:getHeight() / 8
-
-function displayUpgrades(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
-  if not shopButtonsCreated then
-    for i=1,#upgrades do
-      local fn = upgrades[i]
-      if i == 1 then
-        shopButtonManager.new(origin + 100 - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
-      elseif i == 2 then
-        shopButtonManager.new(originXCenter - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
-      elseif i == 3 then
-        shopButtonManager.new(originRight - 100 - offsetX, originYCenter - offsetY, fn, shop.display, shop.displayHot, .25)
-      end
-    end
-    shopButtons = shopButtonManager.getButtons()
-    shopButtonsCreated = true
-  end
-  
-  shopButtonManager.draw(ret1, ret2)
-  
-  love.graphics.draw(guns.shotgun.sprite, origin + 93, originYCenter - 10, nil, 1.5)
-  love.graphics.draw(guns.sniper.sprite, originXCenter - 7, originYCenter - 10, nil, 1.5)
-  love.graphics.draw(guns.uzi.sprite, originRight - 107, originYCenter - 10, nil, 1.5)
-  
-  --Reticle
-  love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
-end
-
-function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
+function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter, ret1, ret2)
   --create buttons -- TODO: this code sucks dick balls and penis
-  if not shopButtonsCreated then
-    for i=1,#skills do
-      local fn = skills[i]
+  if not self.btnsCreated then
+    for i=1,#self.purchases do
+      local fn = self.purchases[i]
       if i == 1 then
-        shopButtonManager.new(originXCenter - 90, originYCenter - 70, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 60, fn, self.buttonSprite, self.buttonSpriteHot)
       elseif i == 2 then
-        shopButtonManager.new(originXCenter - 90, originYCenter - 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 90, fn, self.buttonSprite, self.buttonSpriteHot)
       elseif i == 3 then
-        shopButtonManager.new(originXCenter - 90, originYCenter, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 120, fn, self.buttonSprite, self.buttonSpriteHot)
       elseif i == 4 then
-        shopButtonManager.new(originXCenter - 90, originYCenter + 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 150, fn, self.buttonSprite, self.buttonSpriteHot)
       elseif i == 5 then
-        shopButtonManager.new(originXCenter + 20, originYCenter - 70, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 180, fn, self.buttonSprite, self.buttonSpriteHot)
       elseif i == 6 then
-        shopButtonManager.new(originXCenter + 20, originYCenter + 35, fn, shop.buttonSprite, shop.buttonSpriteHot)
+        shopButtonManager.new(originXCenter + 22, origin2 + 155, fn, self.buttonSprite, self.buttonSpriteHot)
       end
       
-      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, shop.continue, shop.continueHover)
-      
-      shopButtonManager.new(origin + 50, origin2 + 45, generalTab, shop.continue, shop.continueHover)
-      shopButtonManager.new(origin + 50, origin2 + 58, pistolTab, shop.continue, shop.continueHover)
-      shopButtonManager.new(origin + 50, origin2 + 71, shotgunTab, shop.continue, shop.continueHover)
-      shopButtonManager.new(origin + 50, origin2 + 84, sniperTab, shop.continue, shop.continueHover)
-      shopButtonManager.new(origin + 50, origin2 + 97, uziTab, shop.continue, shop.continueHover)
+      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, self.continue, self.continueHover)
     end
-    shopButtons = shopButtonManager.getButtons()
-    shopButtonsCreated = true
+    self.buttons = shopButtonManager.getButtons()
+    self.btnsCreated = true
   end
   
-  love.graphics.draw(shop.display, originXCenter, originYCenter, nil, 1, 1, shop.display:getWidth()/2, shop.display:getHeight()/2)
-  love.graphics.print("Current Price: "..shop.skills.price, originXCenter - 110, origin2Bot - 17)
+  love.graphics.draw(self.display, originXCenter, originYCenter, nil, 1, 1, self.display:getWidth()/2, self.display:getHeight()/2)
+  love.graphics.print("Current Price: "..self.skills.price, originXCenter - 110, origin2Bot - 17)
   
-  if shop.currentScreen == 1 then
+  if self.currentScreen == 1 then
+    --UI Boxes--
+    for i=1,5 do
+      for j=1,20 do
+        uiBox(self.skillList[i], origin + 114 + (j * 5), origin2 + 32 + (i * 30), j)
+      end
+    end
+    
     shopButtonManager.draw(ret1, ret2)
-  
-    --Stats
-    love.graphics.printf(shop.skills.damPurch, originXCenter - 145, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
-    love.graphics.printf(shop.skills.speedPurch, originXCenter - 145, originYCenter - 35, 100, "right", nil, shop.textScale, shop.textScale)
-    love.graphics.printf(shop.skills.ratePurch, originXCenter - 145, originYCenter, 100, "right", nil, shop.textScale, shop.textScale)
-    love.graphics.printf(shop.skills.magPurch, originXCenter - 145, originYCenter + 35, 100, "right", nil, shop.textScale, shop.textScale)
     
-    love.graphics.print("Damage ( +2 )", originXCenter - 75, originYCenter - 68, nil, shop.textScale, shop.textScale)
-    love.graphics.print("Speed ( +10 )", originXCenter - 75, originYCenter - 33, nil, shop.textScale, shop.textScale)
-    love.graphics.print("Reload ( -2% )", originXCenter - 75, originYCenter + 2, nil, shop.textScale, shop.textScale)
-    love.graphics.print("Magnet ( +10% )", originXCenter - 75, originYCenter + 37, nil, shop.textScale, shop.textScale)
+    local iconXOff = 210
+    local iconScale = 1.5
+    love.graphics.print("Damage", origin + 110, origin2 + 50, nil, self.textScale, self.textScale)
+    love.graphics.draw(self.icons.damage, origin + iconXOff, origin2 + 50, nil, iconScale, iconScale)
     
-    love.graphics.print("Current: ".. shop.skills.damage, originXCenter - 75, originYCenter - 58, nil, 1/3, 1/3)
-    love.graphics.print("Current: ".. math.floor(shop.skills.speed + player.v), originXCenter - 75, originYCenter - 23, nil, 1/3, 1/3)
-    love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.reload)).. "s", originXCenter - 75, originYCenter + 12, nil, 1/3, 1/3)
-    love.graphics.print("Current: ".. tonumber(string.format("%.2f", shop.skills.magnet)).. "x Multiplier", originXCenter - 75, originYCenter + 47, nil, 1/3, 1/3)
+    love.graphics.print("Reload", origin + 110, origin2 + 80, nil, self.textScale, self.textScale)
+    love.graphics.draw(self.icons.reload, origin + iconXOff, origin2 + 80, nil, iconScale, iconScale)
     
-    --Stats Row 2
-    love.graphics.printf(shop.skills.ammoPurch, originXCenter - 35, originYCenter - 70, 100, "right", nil, shop.textScale, shop.textScale)
-    love.graphics.print("Max Ammo ( +2 )", originXCenter + 35, originYCenter - 68, nil, shop.textScale, shop.textScale)
-    love.graphics.print("Current: ".. shop.skills.maxAmmo, originXCenter + 35, originYCenter - 58, nil, 1/3, 1/3)
+    love.graphics.print("Ammo", origin + 110, origin2 + 110, nil, self.textScale, self.textScale)
+    love.graphics.draw(self.icons.ammo, origin + iconXOff, origin2 + 110, nil, iconScale, iconScale)
+    
+    love.graphics.print("Speed", origin + 110, origin2 + 140, nil, self.textScale, self.textScale)
+    love.graphics.draw(self.icons.speed, origin + iconXOff, origin2 + 140, nil, iconScale, iconScale)
+    
+    love.graphics.print("Magnet", origin + 110, origin2 + 170, nil, self.textScale, self.textScale)
+    love.graphics.draw(self.icons.magnet, origin + iconXOff, origin2 + 170, nil, iconScale, iconScale)
+    
     
     --Current Health Display
-    love.graphics.print("Health ( +25 )", originXCenter + 35, originYCenter + 37, nil, shop.textScale, shop.textScale)
+    love.graphics.print("Health ( +25 )", originXCenter + 35, originYCenter + 37, nil, self.textScale, self.textScale)
     love.graphics.print("Current: " .. player.health, originXCenter + 30, originYCenter + 58, nil, 1/3, 1/3)
     love.graphics.print("Max: 100", originXCenter + 65, originYCenter + 58, nil, 1/3, 1/3)
-    love.graphics.draw(round.uiBox3, originXCenter + 30, originYCenter + 47, nil)
+    love.graphics.draw(self.uiBox3, originXCenter + 30, originYCenter + 47, nil)
     player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
     love.graphics.draw(player.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
   end
   
   --Continue Button
-  love.graphics.print("Next Round", originXCenter + 61, origin2Bot - 36.5, nil, shop.textScale, shop.textScale)
+  love.graphics.print("Next Round", originXCenter + 61, origin2Bot - 36.5, nil, self.textScale, self.textScale)
   
   --Gold & Reticle
   love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
@@ -236,32 +227,22 @@ function displayShop(origin,origin2,origin2Bot,originRight,originXCenter,originY
   love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
 end
 
-function resetShopButtons()
-  shopButtonsCreated = false
+function shop:leave()
+  self.btnsCreated = false
   shopButtonManager.clear()
 end
 
-function purchase()
+function shop:purchase()
   love.audio.stop(soundFX.makePurchase)
   love.audio.play(soundFX.makePurchase)
-  gold.total = gold.total - shop.skills.price
-  shop.skills.price = shop.skills.price + 2
-  shop.skills.healthPrice = shop.skills.price
+  gold.total = gold.total - self.skills.price
+  self.skills.price = self.skills.price + 2
+  self.skills.healthPrice = self.skills.price
 end
 
-function resetShop()
-  resetShopButtons()
-  shop.skills.price = 10
-  shop.skills.grenades = 1000
-  shop.skills.damage = 6
-  shop.skills.damPurch = 0
-  shop.skills.speedPurch = 0
-  shop.skills.ratePurch = 0
-  shop.skills.magPurch = 0
-  shop.skills.ammoPurch = 0
-  shop.skills.maxAmmo = 6
-  shop.skills.reload = 2.5
-  shop.skills.speed = 0
-  shop.skills.magnet = 1
-  shop.rate = 1
+function shop:reset()
+  self.btnsCreated = false
+  shopButtonManager.clear()
 end
+
+return shop

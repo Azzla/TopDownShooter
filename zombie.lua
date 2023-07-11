@@ -1,4 +1,5 @@
 local ZombieParticleManager = require('particleManager')
+local DecisionTrees = require('dicts/decisionTrees')
 local TextManager = require('textManager')
 local zombieTypes = require('dicts/zombsDict')
 
@@ -12,13 +13,14 @@ bloodSystem:setSizeVariation ( .5 )
 bloodSystem:setSpeed(30, 50)
 
 local shootTimer = globalTimer.new()
+local spawnTweenTimer = globalTimer.new()
 
 function drawZombies()
   for i,z in ipairs(zombies) do
     ZombieParticleManager.draw(z.p.psys, z.x, z.y, z.p.s)
     
     if z.zombieDamaged then love.graphics.setShader(damagedShader) end
-    z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, 1, 1, z.oX, z.oY)
+    z.animation:draw(z.sprite, z.x, z.y, z.currentAngle+math.pi/2, z.s.s, z.s.s, z.oX, z.oY)
     love.graphics.setShader()
     
     if z.healthBar.isHidden == false then
@@ -28,15 +30,15 @@ function drawZombies()
 end
 
 function spawnZombie(zombieType)
-  local side = math.random(1,4)
   local zombie = shallowCopy(zombieTypes[zombieType])
+  local difficulty = Gamestate.current().difficulty
   
   --stats determined at spawn
-  zombie.health = zombie._health()
-  zombie.killReward = zombie._killReward()
-  zombie.speedMax = zombie._speedMax()
-  zombie.speedMin = zombie._speedMin()
-  if zombie._regen then zombie.regen = zombie._regen(zombie.health) end
+  zombie.health = zombie._health(difficulty)
+  zombie.killReward = zombie._killReward(difficulty)
+  zombie.speedMax = zombie._speedMax(difficulty)
+  zombie.speedMin = zombie._speedMin(difficulty)
+  if zombie._regen then zombie.regen = zombie._regen(zombie.health, difficulty) end
   if zombie.fireRate then 
     shootTimer:every(zombie.fireRate, function()
       if not zombie.dead then
@@ -47,8 +49,13 @@ function spawnZombie(zombieType)
   
   --defaults
   zombie.isZombie = true
+  zombie.type = zombieType
+  zombie.canMove = false
   zombie.x = 0
   zombie.y = 0
+  zombie.s = { s = .01 }
+  zombie.targetS = { s = 1 }
+  zombie.growthTime = 1.5
   zombie.vx = 0
   zombie.vy = 0
   zombie.id = true_randomID(#zombies+1)
@@ -57,45 +64,54 @@ function spawnZombie(zombieType)
   zombie.speed = zombie.speedMin
   zombie.oX = zombie.width/2
   zombie.oY = zombie.height/2
+  zombie.collOffY = zombie.collOffY or 0
   zombie.healthBar = {}
   zombie.dead = false
-  zombie.collideable = true
+  zombie.collideable = false
   zombie.zombieDamaged = false
+  zombie._spawnX = function() return math.random(50, map_width - 50) end
+  zombie._spawnY = function() return math.random(50, map_height - 50) end
+  zombie.tween = tween.new(zombie.growthTime, zombie.s, zombie.targetS)
+  
+  spawnTweenTimer:after(zombie.growthTime, function()
+    zombie.canMove = true
+    zombie.collideable = true
+  end)
   
   --animations/particles
   zombie.grid = anim8.newGrid(zombie.frameSize, zombie.frameSize, zombie.sprite:getWidth(), zombie.sprite:getHeight(), nil, nil, zombie.spriteGap)
   zombie.animation = anim8.newAnimation(zombie.grid("1-8", 1), zombie.frameTime)
   zombie.p = ZombieParticleManager.new(zombie.x, zombie.y, bloodSystem:clone(), zombie.pScale)
   
-  placeZombie(zombie, side)
+  placeZombie(zombie)
 
-  zombie.coll = HC.rectangle(zombie.x,zombie.y,zombie.width*.85,zombie.height*.85)
+  zombie.coll = HC.rectangle(zombie.x,zombie.y,zombie.width*.85,(zombie.height-zombie.collOffY)*.85)
   zombie.coll.parent = zombie
   
   table.insert(zombie, spawnHealthBar(zombie.health, zombie.x, zombie.y, zombie.healthBar))
   table.insert(zombies, zombie)
 end
 
-function zombieUpdate(dt)
-  if round.gameState == 2 then
-    shootTimer:update(dt)
-    for i,z in ipairs(zombies) do
-      ZombieParticleManager.update(z.p.psys, dt)
+function zombieUpdate(dt, game)
+  shootTimer:update(dt)
+  DecisionTrees.update(dt)
+  spawnTweenTimer:update(dt)
+  for i,z in ipairs(zombies) do
+    ZombieParticleManager.update(z.p.psys, dt)
+    z.tween:update(dt)
+    
+    if z.currentAngle ~= zombie_angle_wrld(z) and distanceBetween(player.x, player.y, z.x, z.y) > z.rotActiveDist then
+      z.currentAngle = lerp(z.currentAngle, zombie_angle_wrld(z), 1, z.rotSpeed*dt)
+    end
+    
+    zombieMoveHandler(z, dt, game)
+    
+    if z.health < z.healthBar.totalHealth then
+      healthBarUpdate(z.x, z.y, z.healthBar, z.healthBar.animation, z.health, z.healthBar.totalHealth)
       
-      if z.currentAngle ~= zombie_angle_wrld(z) and distanceBetween(player.x, player.y, z.x, z.y) > z.rotActiveDist then
-        z.currentAngle = lerp(z.currentAngle, zombie_angle_wrld(z), 1, z.rotSpeed*dt)
-      end
-      
-      zombieMoveHandler(z,dt)
-      
-      if z.health < z.healthBar.totalHealth then
-        
-        healthBarUpdate(z.x, z.y, z.healthBar, z.healthBar.animation, z.health, z.healthBar.totalHealth)
-        
-        if z.regen then
-          z.health = z.health + z.regen
-          if z.health >= z.healthBar.totalHealth then z.healthBar.isHidden = true end
-        end
+      if z.regen then
+        z.health = z.health + z.regen
+        if z.health >= z.healthBar.totalHealth then z.healthBar.isHidden = true end
       end
     end
   end
@@ -113,22 +129,11 @@ function zombieUpdate(dt)
 end
 
 function placeZombie(z, s)
-  if s == 1 then
-    z.x = player.x - z._spawn()
-    z.y = math.random(player.y - z._spawn(), player.y + z._spawn())
-  elseif s == 2 then
-    z.x = math.random(player.x - z._spawn(), player.x + z._spawn())
-    z.y = player.y - z._spawn()
-  elseif s == 3 then
-    z.x = player.x + z._spawn()
-    z.y = math.random(player.y + z._spawn(), player.y - z._spawn())
-  elseif s == 4 then
-    z.x = math.random(player.x + z._spawn(), player.x - z._spawn())
-    z.y = player.y + z._spawn()
-  end
+  z.x = z._spawnX()
+  z.y = z._spawnY()
 end
 
-function collideWithBullet(b, z)
+function collideWithBullet(b, z, game)
   if b.id ~= z.id then
     ZombieParticleManager.spawn(z.p.psys, math.random(12,24), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
     
@@ -163,9 +168,10 @@ function collideWithBullet(b, z)
       ZombieParticleManager.spawn(deathP.psys, math.random(24,36), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
       spawnBlood(z.x,z.y)
       
-      round.totalKilled = round.totalKilled + 1
-      round.currentKilled = round.currentKilled + 1
-      spawnKillReward(z)
+      game.totalKilled = game.totalKilled + 1
+      game.currentKilled = game.currentKilled + 1
+      spawnGoldReward(z)
+      spawnXPReward(z)
       powerupChance(z)
     end
 
@@ -205,15 +211,16 @@ local zombieFilter = function(item, other)
   elseif other.isPlayer then return 'cross' end
 end
 
-function zombieMoveHandler(zom,dt)
-  zom.animation:update(dt)
+function zombieMoveHandler(zom,  dt, game)
+  if not zom.canMove then return end
+  if zom.speed > (zom.speedMax + .1) then
+    zom.animation:update(3*dt)
+  else
+    zom.animation:update(1*dt)
+  end
   local currentDist = distanceBetween(player.x, player.y, zom.x, zom.y)
   
-  if zom.speed < zom.speedMax and currentDist <= zom.activeDist then
-    zom.speed = zom.speed * (1 + dt/2)
-  elseif zom.speed > zom.speedMin and currentDist > zom.activeDist then
-    zom.speed = zom.speed * (1 - dt)
-  end
+  DecisionTrees[zom.type](currentDist, zom, dt)
   
   zom.rotSpeed = zom.rotFactor/zom.speed
   zom.vx = zom.vx + math.cos(zom.currentAngle)*zom.speed
@@ -224,10 +231,10 @@ function zombieMoveHandler(zom,dt)
   local collisions = HC.collisions(zom.coll)
   for other, separating_vector in pairs(collisions) do
     --bullet
-    if other.parent and other.parent.isBullet then
+    if other.parent and other.parent.isBullet and zom.collideable then
       local collides, dx, dy = zom.coll:collidesWith(other)
       if collides and not other.parent.isEnemyBullet and not other.parent.dead then
-        collideWithBullet(other.parent, zom)
+        collideWithBullet(other.parent, zom, game)
       end
     end
   end
@@ -236,7 +243,7 @@ function zombieMoveHandler(zom,dt)
   local goalX = zom.x + zom.vx * dt
   local goalY = zom.y + zom.vy * dt
   
-  zom.coll:moveTo(goalX,goalY)
+  zom.coll:moveTo(goalX, goalY)
   zom.coll:setRotation(zom.currentAngle - math.pi/2)
   
   zom.x = goalX

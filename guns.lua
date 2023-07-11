@@ -1,3 +1,4 @@
+local gunsRef = require('dicts/gunsDict')
 guns = require('dicts/gunsDict')
 
 guns.equipped = guns.pistol
@@ -5,8 +6,38 @@ guns.equipped = guns.pistol
 
 gunTimer = globalTimer.new()
 
-table.insert(KEYPRESSED, function(key, scancode)
-  if key == '1' then
+function calcBonuses(skills)
+  for gun in pairs(guns) do
+    if gun ~= 'equipped' then
+      local _g = guns[gun]
+      local g_ref = gunsRef[gun]
+      
+      _g.clipSize = g_ref.clipSize + math.floor(skills.maxAmmo * _g.upgrades.clipSize)
+      _g.currAmmo = _g.clipSize
+      
+      _g.dmg = g_ref.dmg + math.floor(skills.damage * _g.upgrades.dmg)
+      _g.reload = g_ref.reload - (skills.reload * _g.upgrades.reload)
+      if _g.reload <= .1 then _g.reload = .1 end
+      updateTweens()
+    end
+  end
+end
+
+function processGunSounds()
+  love.audio.play(guns.equipped.sound)
+  
+  if guns.equipped == guns['shotgun'] then
+    gunTimer:after(.2, function() love.audio.play(soundFX.pumpAction) end)
+  elseif guns.equipped == guns['sniper'] then
+    screenShake(.15,.5)
+    gunTimer:after(.4, function() love.audio.play(soundFX.pumpAction) end)
+  elseif guns.equipped == guns['railgun'] then
+    screenShake(.25,.6)
+  end
+end
+
+function gunKeybinds(key)
+    if key == '1' then
     if not canReload and guns.equipped == guns.pistol then return end
     if guns.equipped == guns.pistol then return end
     
@@ -62,24 +93,10 @@ table.insert(KEYPRESSED, function(key, scancode)
     love.audio.play(soundFX.pumpAction)
   end
   
-  if round.gameState == 2 and canReload and key == 'r' then
+  if Gamestate.current() == game and canReload and key == 'r' then
     reload()
   end
-end)
-
-function processGunSounds()
-  love.audio.play(guns.equipped.sound)
-  
-  if guns.equipped == guns['shotgun'] then
-    gunTimer:after(.2, function() love.audio.play(soundFX.pumpAction) end)
-  elseif guns.equipped == guns['sniper'] then
-    screenShake(.15,.5)
-    gunTimer:after(.4, function() love.audio.play(soundFX.pumpAction) end)
-  elseif guns.equipped == guns['railgun'] then
-    screenShake(.25,.6)
-  end
 end
-
 
 function switchWeapon(str)
   if guns.equipped.hasWarmup then

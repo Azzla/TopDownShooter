@@ -49,7 +49,7 @@ function fire()
   
   processGunSounds()
   guns.equipped.currAmmo = guns.equipped.currAmmo - 1
-  round.bulletCount = round.bulletCount + 1
+--  round.bulletCount = round.bulletCount + 1
   
   --magical magics
   local offX,offY = offsetXY(guns.equipped.bulletOffsX, guns.equipped.bulletOffsY, player_angle())
@@ -90,13 +90,13 @@ function spawnBullet(damageUp, direction, offsX, offsY)
   bullet.isBullet = true
   bullet.x = player.x + offsX
   bullet.y = player.y + offsY
-  bullet.id = true_randomID(round.bulletCount)
+  bullet.id = true_randomID(math.random(0,99999999))
   bullet.direction = direction
   bullet.sprite = guns.equipped.bulletSprite
   bullet.frame = bullet.sprite
   bullet.origX = bullet.sprite:getWidth()/2
   bullet.origY = bullet.sprite:getHeight()/2
-  bullet.damage = guns.equipped.dmg
+  bullet.damage = guns.equipped.dmg or guns.equipped._dmg()
   bullet.falloff = guns.equipped.falloff
   bullet.pierceFalloff = guns.equipped.pierceFalloff
   if damageUp then bullet.damage = bullet.damage * 2 end
@@ -131,7 +131,7 @@ function spawnBulletZombie(z)
   bullet.isEnemyBullet = true
   bullet.x = z.x
   bullet.y = z.y
-  bullet.id = round.bulletCount/100000
+  bullet.id = math.random(1, 999999999)/100000
   bullet.direction = z.currentAngle + math.pi/2
   bullet.sprite = z.bulletSprite
   bullet.sheet = z.bulletSheet
@@ -189,42 +189,40 @@ function bulletUpdate(dt)
   gunTimer:update(dt)
   warmingTimer:update(dt)
   
-  if round.gameState == 2 then
-    for i,b in ipairs(bullets) do
-      if b.timer ~= nil then b.timer:update(dt) end
-      
-      local goalX = b.x + math.cos(b.direction - math.pi/2) * b.speed * dt
-      local goalY = b.y + math.sin(b.direction - math.pi/2) * b.speed * dt
-      b.coll:moveTo(goalX,goalY)
-      
-      b.x, b.y = goalX, goalY
-      
-      if b.isEnemyBullet and not b.dead then
-        b.anim:update(dt)
-      end
+  for i,b in ipairs(bullets) do
+    if b.timer ~= nil then b.timer:update(dt) end
+    
+    local goalX = b.x + math.cos(b.direction - math.pi/2) * b.speed * dt
+    local goalY = b.y + math.sin(b.direction - math.pi/2) * b.speed * dt
+    b.coll:moveTo(goalX,goalY)
+    
+    b.x, b.y = goalX, goalY
+    
+    if b.isEnemyBullet and not b.dead then
+      b.anim:update(dt)
+    end
+  end
+  
+  for i=#bullets,1,-1 do
+    local b = bullets[i]
+    --out of bounds
+    if b.x < 0 or b.y < 0 or b.x > SCREEN_W or b.y > SCREEN_H then
+      HC.remove(b.coll)
+      table.remove(bullets, i)
     end
     
-    for i=#bullets,1,-1 do
-      local b = bullets[i]
-      --out of bounds
-      if b.x < 0 or b.y < 0 or b.x > love.graphics.getWidth() or b.y > love.graphics.getHeight() then
-        HC.remove(b.coll)
-        table.remove(bullets, i)
-      end
-      
-      --dead flag
-      if b.dead == true then
-        HC.remove(b.coll)
-        table.remove(bullets, i)
-      end
+    --dead flag
+    if b.dead == true then
+      HC.remove(b.coll)
+      table.remove(bullets, i)
     end
-    
-    for i=#bloods,1,-1 do
-      local bl = bloods[i]
-      bl.tween:update(dt)
-      if bl.dead == true then
-        table.remove(bloods, i)
-      end
+  end
+  
+  for i=#bloods,1,-1 do
+    local bl = bloods[i]
+    bl.tween:update(dt)
+    if bl.dead == true then
+      table.remove(bloods, i)
     end
   end
 end
@@ -267,47 +265,19 @@ function fireBullets()
   
   local handOffsetX,handOffsetY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY,player_angle())
   
-  if guns.equipped.bullets then
+  if guns.equipped.bullets then --its a shotgun lol this is bad code
     local bullets = guns.equipped.bullets
-    local direction = player_angle() - math.pi/32
+    local direction = player_angle() - guns.equipped.spread()/2 --math.pi/32
     local increment = guns.equipped.spread() / bullets
     
     for i=1,bullets do
       spawnBullet(player.damageUp, direction, handOffsetX, handOffsetY)
-      round.bulletCount = round.bulletCount + 1
+--      round.bulletCount = round.bulletCount + 1
       direction = direction + increment
       increment = guns.equipped.spread() / bullets
     end
   else
     spawnBullet(player.damageUp, guns.equipped.spread(), handOffsetX, handOffsetY)
-    round.bulletCount = round.bulletCount + 1
-  end
-end
-
-function love.mousereleased(x, y, button)
-  if round.gameState == 2 and not shopCooldown then
-    if button == 1 then
-      --stop warming guns with warming time, like chaingun
-      if guns.equipped.hasWarmup then
-        guns.equipped.warm = false
-        guns.equipped.isWarming = false
-        coolingDown = false
-        warmingTimer:clear()
-        love.audio.stop(guns.equipped.warmSound)
-        love.audio.stop(soundFX.firingWarm)
-      elseif guns.equipped.currAmmo > 0 and canShoot and not coolingDown then
-        fireBullets()
-        
-        if guns.equipped.currAmmo == 0 then reload() end
-      elseif guns.equipped.currAmmo == 0 then
-        reload()
-      end
-    elseif button == 2 then
-      if shop.skills.grenades >= 1 then
-        love.audio.play(soundFX.dash)
-        spawnGrenade()
-        shop.skills.grenades = shop.skills.grenades - 1
-      end
-    end
+--    round.bulletCount = round.bulletCount + 1
   end
 end

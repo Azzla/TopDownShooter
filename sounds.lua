@@ -4,8 +4,9 @@ soundFXTimer = globalTimer.new()
 musicStarted = false
 love.audio.setVolume(1)
 
-function loadSoundFX()
+function soundFX:loadSoundFX()
   soundFX.lazer = love.audio.newSource('sounds/lazer2.mp3', 'static')
+  soundFX.pistol = love.audio.newSource('sounds/pistol.mp3', 'static')
   soundFX.reload = love.audio.newSource('sounds/reload.mp3', 'static')
   soundFX.move = love.audio.newSource('sounds/move.mp3', 'static')
   soundFX.makePurchase = love.audio.newSource('sounds/makePurchase.mp3', 'static')
@@ -59,6 +60,7 @@ function loadSoundFX()
   soundFX.railgun_out:setVolume(.4)
   
   soundFX.lazer:setVolume(.4)
+  soundFX.pistol:setVolume(.3)
   soundFX.reload:setVolume(.4)
   soundFX.explosion:setVolume(.12)
   soundFX.move:setVolume(.4)
@@ -71,7 +73,7 @@ function loadSoundFX()
   soundFX.wind:setVolume(0)
   soundFX.music:setVolume(.35)
   soundFX.music:setLooping(true)
-  soundFX.music2:setVolume(.05)
+  soundFX.music2:setVolume(.06)
   soundFX.music2:setLooping(true)
   soundFX.musicBoss:setVolume(.35)
   soundFX.musicBoss:setLooping(true)
@@ -86,8 +88,8 @@ function playMusic()
   love.audio.play(soundFX.music2)
 end
 
-function gameMusic(dt)
-  if round.gameState == 2 then
+function gameMusic(dt, game)
+  if Gamestate.current() == game then
     soundFXTimer:update(dt)
     if not annihilatePlayed then
       love.audio.play(soundFX.annihilate)
@@ -102,16 +104,19 @@ function gameMusic(dt)
     end
     
     if soundFX.music:getVolume() ~= 1 then soundFX.music:setVolume(1) end
+    if soundFX.music2:getVolume() ~= .06 then soundFX.music2:setVolume(.06) end
     if soundFX.musicBoss:getVolume() ~= .35 then soundFX.musicBoss:setVolume(.35) end
   end
   
-  if round.gameState == 3 then
+  if Gamestate.current() == shop then
     if soundFX.music:getVolume() ~= .1 then soundFX.music:setVolume(.1) end
+    if soundFX.music2:getVolume() ~= .02 then soundFX.music2:setVolume(.02) end
     if soundFX.musicBoss:getVolume() ~= .1 then soundFX.musicBoss:setVolume(.1) end
   end
   
-  if round.gameState == 5 then
+  if Gamestate.current() == gameOver then
     if soundFX.music:getVolume() ~= 0 then soundFX.music:setVolume(0) end
+    if soundFX.music2:getVolume() ~= 0 then soundFX.music2:setVolume(0) end
     if soundFX.musicBoss:getVolume() ~= 0 then soundFX.musicBoss:setVolume(0) end
   end
 end

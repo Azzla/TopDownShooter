@@ -29,7 +29,7 @@ function drawNightShader()
   love.graphics.setShader(nightShader)
   
   nightShader:send("num_lights", 1)
-  nightShader:send("lights[0].position", {screen_width / 2, screen_height / 2})
+  nightShader:send("lights[0].position", {SCREEN_W / 2, SCREEN_H / 2})
   nightShader:send("lights[0].diffuse", {1.0, 1.0, 1.0})
   nightShader:send("lights[0].power", 25)
   

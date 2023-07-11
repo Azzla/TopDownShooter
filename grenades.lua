@@ -65,7 +65,8 @@ function spawnGrenade()
           z.dead = true
           round.totalKilled = round.totalKilled + 1
           round.currentKilled = round.currentKilled + 1
-          spawnKillReward(z)
+          spawnGoldReward(z)
+          spawnXPReward(z)
           powerupChance(z)
           
           local deathP = GrenadeParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 3 + ((grenade.v * 5 - 250) / 100), 3)
@@ -115,13 +116,13 @@ function grenadeUpdate(dt)
         g.canCollide = false
         
         --TODO stuff
-        g.rotFactor = g.rotFactor / 2
---        if (dx < 0 and g.vx > 0) or (dx > 0 and g.vx < 0) then
---          g.vx = -g.vx * .01
---        end
---        if (dy < 0 and g.vy > 0) or (dy > 0 and g.vy < 0) then
---          g.vy = -g.vy * .01
---        end
+        g.rotFactor = g.rotFactor / 4
+        if (dx < 0 and g.vx > 0) or (dx > 0 and g.vx < 0) then
+          g.vx = -g.vx * .01
+        end
+        if (dy < 0 and g.vy > 0) or (dy > 0 and g.vy < 0) then
+          g.vy = -g.vy * .01
+        end
       end
     end
     

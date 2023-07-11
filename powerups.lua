@@ -34,7 +34,7 @@ function spawnPowerup(index, zombie)
   powerup.hitRadius = 12
   powerup.collision = true
   powerup.duration = 1
-  powerup.speed = math.random(70+math.ceil(shop.skills.magnet*4),120+math.ceil(shop.skills.magnet*4))
+  powerup.speed = math.random(70, 120)
   
   if powerup.id == 2 then
     powerup.duration = 10
@@ -113,53 +113,51 @@ function drawPowerups()
   end
 end
 
-function powerupUpdate(dt)
-  if round.gameState == 2 then
-    for i,pow in ipairs(powerupsActive) do
-      pow.timer:update(dt)
-      
-      if distanceBetween(pow.x, pow.y, player.x, player.y) > pow.hitRadius and distanceBetween(pow.x, pow.y, player.x, player.y) < (25 * shop.skills.magnet) then
-        pow.x = pow.x + math.cos(zombie_angle_wrld(pow)) * pow.speed * dt
-        pow.y = pow.y + math.sin(zombie_angle_wrld(pow)) * pow.speed * dt
-      elseif distanceBetween(player.x, player.y, pow.x, pow.y) <= pow.hitRadius and pow.collision then
-        for i,p in pairs(powerupsActive) do
-          if p.active and p.id == pow.id then
-            p.active = false
-            p.timer:clear()
-          end
-        end
-        pow.collision = false
-        activatePowerup(pow)
-        TextManager.genericPopup(player.x, player.y, pow.type)
-      end
-    end
+function powerupUpdate(dt, game, magnet)
+  for i,pow in ipairs(powerupsActive) do
+    pow.timer:update(dt)
     
-    for i=#powerupsActive,1,-1 do
-      local p = powerupsActive[i]
-      
-      if p.dead then
-        if p.id == 2 then
-          player.damageUp = false
-        elseif p.id == 3 then
-          player.bonusV = 0
-        elseif p.id == 4 then
-          player.isInvincible = false
+    if distanceBetween(pow.x, pow.y, player.x, player.y) > pow.hitRadius and distanceBetween(pow.x, pow.y, player.x, player.y) < (25 * magnet) then
+      pow.x = pow.x + math.cos(zombie_angle_wrld(pow)) * pow.speed * dt
+      pow.y = pow.y + math.sin(zombie_angle_wrld(pow)) * pow.speed * dt
+    elseif distanceBetween(player.x, player.y, pow.x, pow.y) <= pow.hitRadius and pow.collision then
+      for i,p in pairs(powerupsActive) do
+        if p.active and p.id == pow.id then
+          p.active = false
+          p.timer:clear()
         end
-        
-        table.remove(powerupsActive, i)
       end
+      pow.collision = false
+      activatePowerup(pow)
+      game.textManager.genericPopup(player.x, player.y, pow.type)
     end
-    
-    if round.isDespawning then
-      if powerupAlpha.alpha <= 1 and flag then
-        powerupTween:update(dt)
-        if powerupAlpha.alpha == 0 then flag = false end
-      end
-      if powerupAlpha.alpha >= 0 and not flag then
-        powerupTween:update(-dt)
-        if powerupAlpha.alpha == 1 then flag = true end
-      end
-      
-    elseif not round.isDespawning and powerupAlpha.alpha ~= 1 then powerupAlpha.alpha = 1 end
   end
+  
+  for i=#powerupsActive,1,-1 do
+    local p = powerupsActive[i]
+    
+    if p.dead then
+      if p.id == 2 then
+        player.damageUp = false
+      elseif p.id == 3 then
+        player.bonusV = 0
+      elseif p.id == 4 then
+        player.isInvincible = false
+      end
+      
+      table.remove(powerupsActive, i)
+    end
+  end
+  
+  if game.despawning then
+    if powerupAlpha.alpha <= 1 and flag then
+      powerupTween:update(dt)
+      if powerupAlpha.alpha == 0 then flag = false end
+    end
+    if powerupAlpha.alpha >= 0 and not flag then
+      powerupTween:update(-dt)
+      if powerupAlpha.alpha == 1 then flag = true end
+    end
+    
+  elseif not game.despawning and powerupAlpha.alpha ~= 1 then powerupAlpha.alpha = 1 end
 end

@@ -1,3 +1,7 @@
+local function rgb(integer)
+  return integer/255
+end
+
 energy = {}
 energy.width = 0
 energy.height = 1
@@ -18,10 +22,10 @@ dashTween = tween.new(2.7, energy, target2)
 reloadTween = tween.new(guns.equipped.reload, reloader, target)
 
 function energyUpdate(dt)
-  if round.gameState == 2 and energy.width ~= target.width then
+  if energy.width ~= target.width then
     dashTween:update(dt)
   end
-  if round.gameState == 2 and reloader.width ~= target.width then
+  if reloader.width ~= target.width then
     reloadTween:update(dt)
   end
 end

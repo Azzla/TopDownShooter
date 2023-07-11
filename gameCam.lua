@@ -1,41 +1,39 @@
 cameraFile = require('libs/hump/camera')
 cam = cameraFile()
-cam:zoom(guns.equipped.zoomFactor)
 cam:lookAt(player.x, player.y)
-camSmoothing = cam.smooth.damped(8)
+local camSmoothing = cam.smooth.damped(8)
 
-camTimer = globalTimer.new()
+local camTimer = globalTimer.new()
 local cameraDamaged = false
 local magnitude = 1
 
-camOrigin,camOrigin2 = cam:worldCoords(0,0)
-camOriginMax,camOrigin2Max = cam:worldCoords(map_width,map_height)
+local camOrigin,camOrigin2 = cam:worldCoords(0,0)
+local camOriginMax,camOrigin2Max = cam:worldCoords(map_width,map_height)
 
-currentZoom = { zoom = guns.equipped.zoomFactor }
-targetZoom = { zoom = guns.equipped.zoomFactor }
-camTween = tween.new(.25, currentZoom, targetZoom)
+currentZoom = { zoom = 7 }
+local targetZoom = { zoom = 7 }
+local camTween = tween.new(.25, currentZoom, targetZoom)
 
 function updateCameraTimers(dt)
   camTimer:update(dt)
   camTween:update(dt)
 end
 
-function cameraHandler(x, y, dt)
-  local wvw, wvh = screen_width/(2*guns.equipped.zoomFactor), screen_height/(2*guns.equipped.zoomFactor)
+function cameraHandler(dt, x, y, zoom)
+  updateCameraTimers(dt)
+  local wvw, wvh = SCREEN_W/(2*zoom), SCREEN_H/(2*zoom)
   
-  if round.gameState == 2 then
-    cam:lockPosition(x, y, camSmoothing)
-    
-    --screen shake
-    if cameraDamaged then
-      cam.x = cam.x + math.random(-magnitude,magnitude)
-      cam.y = cam.y + math.random(-magnitude,magnitude)
-    end
-    
-    cam.x = math.max(cam.x, 0 + wvw)
-    cam.x = math.min(cam.x, map_width - wvw)
-    cam.y = math.max(cam.y, 0 + wvh)
-    cam.y = math.min(cam.y, map_height - wvh)
+  cam:lockPosition(x, y, camSmoothing)
+  
+  cam.x = math.max(cam.x, 0 + wvw)
+  cam.x = math.min(cam.x, map_width - wvw)
+  cam.y = math.max(cam.y, 0 + wvh)
+  cam.y = math.min(cam.y, map_height - wvh)
+  
+  --screen shake
+  if cameraDamaged then
+    cam.x = cam.x + math.random(-magnitude,magnitude)
+    cam.y = cam.y + math.random(-magnitude,magnitude)
   end
 end
 

@@ -1,20 +1,23 @@
 local PlayerParticleManager = require('particleManager')
+local Characters = require('dicts/characterDict')
+
 local dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)
 dashSystem:setParticleLifetime (.05, .3)
 dashSystem:setSizes(1)
 dashSystem:setSpeed(60)
 
 
-local sprite = love.graphics.newImage('sprites/Robot.png')
+local sprite = love.graphics.newImage('sprites/characters/chrome.png')
 player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .75)
+player.zoom = 4
 
 --powerups
 player.isInvincible = false
 player.damageUp = false
 
 player.isPlayer = true
-player.sprite = love.graphics.newImage('sprites/robotWalk.png')
-player.frame = love.graphics.newImage('sprites/Robot.png')
+player.sprite = love.graphics.newImage('sprites/characters/chromeWalk.png')
+player.frame = love.graphics.newImage('sprites/characters/chrome.png')
 player.x = map_width / 2
 player.vx = 0
 player.y = map_height / 2
@@ -34,33 +37,31 @@ player.canDash = true
 player.dashP = PlayerParticleManager.new(player.x, player.y, dashSystem:clone(), 1)
 player.isRecharge = true
 
-table.insert(KEYPRESSED, function(key, scancode)
+function player:keybinds(key, upgradeSpeed)
   if key == 'space' then
-    if round.gameState == 2 then
-      if player.canDash == true then
-        
-        love.audio.play(soundFX.dash)
-        PlayerParticleManager.spawn(player.dashP.psys, math.random(12,24), 0, math.pi*2, 1)
-        player.canDash = false
-        player.isRecharge = false
-        
-        if love.keyboard.isDown("a") then
-          player.vx = player.vx - (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("d") then
-          player.vx = player.vx + (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("w") then
-          player.vy = player.vy - (player.v+shop.skills.speed)/2
-        end
-        if love.keyboard.isDown("s") then
-          player.vy = player.vy + (player.v+shop.skills.speed)/2
-        end
-        dashTween:reset()
+    if player.canDash == true then
+      
+      love.audio.play(soundFX.dash)
+      PlayerParticleManager.spawn(player.dashP.psys, math.random(12,24), 0, math.pi*2, 1)
+      player.canDash = false
+      player.isRecharge = false
+      
+      if love.keyboard.isDown("a") then
+        player.vx = player.vx - (player.v+upgradeSpeed)/2
       end
+      if love.keyboard.isDown("d") then
+        player.vx = player.vx + (player.v+upgradeSpeed)/2
+      end
+      if love.keyboard.isDown("w") then
+        player.vy = player.vy - (player.v+upgradeSpeed)/2
+      end
+      if love.keyboard.isDown("s") then
+        player.vy = player.vy + (player.v+upgradeSpeed)/2
+      end
+      dashTween:reset()
     end
   end
-end)
+end
 
 function spawnPlayerHealthBar()
   player.healthBar = {}
@@ -73,28 +74,23 @@ function drawPlayer()
   PlayerParticleManager.draw(player.dashP.psys, player.x, player.y)
 end
 
-function playerUpdate(dt)
+function playerUpdate(dt, upgradeSpeed, game)
   PlayerParticleManager.update(player.dashP.psys, dt)
+  walkAnimation(dt)
   
   healthBarUpdate(player.x, player.y, player.healthBar, player.healthBar.animation, player.health, player.healthBar.totalHealth)
   if player.health <= 0 then
-    round.gameState = 1
+    Gamestate.switch(game.menu)
   end
-  if round.gameState == 2 then
-    movementHandle(dt)
-  end
+  movementHandle(dt, upgradeSpeed, game)
 end
 
 function walkAnimation(dt)
-  if round.gameState == 2 then
-    if love.keyboard.isDown('w','a','s','d') then
-      player.animation:update(dt)
-      soundFX.move:resume()
-    else
-      player.animation:gotoFrame(1)
-      love.audio.pause(soundFX.move)
-    end
-  elseif round.gameState == 3 then
+  if love.keyboard.isDown('w','a','s','d') then
+    player.animation:update(dt)
+    soundFX.move:resume()
+  else
+    player.animation:gotoFrame(1)
     love.audio.pause(soundFX.move)
   end
 end
@@ -105,7 +101,7 @@ local playerFilter = function(item, other)
   end
 end
 
-function movementHandle(dt)
+function movementHandle(dt, speedUpgrade, game)
   local penalty = 0
   if love.mouse.isDown(1) and guns.equipped.tween and canShoot then
     penalty = guns.equipped.movementPenalty
@@ -116,16 +112,16 @@ function movementHandle(dt)
   end
   
   if love.keyboard.isDown("a") then
-    player.vx = player.vx - (player.v+shop.skills.speed+player.bonusV-penalty)*dt
+    player.vx = player.vx - (player.v+speedUpgrade+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("d") then
-    player.vx = player.vx + (player.v+shop.skills.speed+player.bonusV-penalty)*dt
+    player.vx = player.vx + (player.v+speedUpgrade+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("w") then
-    player.vy = player.vy - (player.v+shop.skills.speed+player.bonusV-penalty)*dt
+    player.vy = player.vy - (player.v+speedUpgrade+player.bonusV-penalty)*dt
   end
   if love.keyboard.isDown("s") then
-    player.vy = player.vy + (player.v+shop.skills.speed+player.bonusV-penalty)*dt
+    player.vy = player.vy + (player.v+speedUpgrade+player.bonusV-penalty)*dt
   end
   
   if player.x <= 10 then
@@ -155,7 +151,7 @@ function movementHandle(dt)
     if other.parent.isZombie then
       local collides, dx, dy = player:collidesWith(other)
       if collides and other.parent.collideable then
-        collideWithZombie(other.parent)
+        collideWithZombie(other.parent, game)
       end
     end
     
@@ -163,7 +159,7 @@ function movementHandle(dt)
     if other.parent.isBullet then
       local collides, dx, dy = player:collidesWith(other)
       if collides and other.parent.isEnemyBullet and not other.parent.dead then
-        collideBulletWithPlayer(other.parent)
+        collideBulletWithPlayer(other.parent, game)
       end
     end
   end
@@ -183,10 +179,10 @@ dashTimer:every(2.7, function()
   player.isRecharge = true
 end)
 
-function collideBulletWithPlayer(b)
+function collideBulletWithPlayer(b, game)
   --Damage
   player.health = player.health - b.damage
-  TextManager.playerDmgPopup(player.x, player.y, b)
+  game.textManager.playerDmgPopup(player.x, player.y, b)
   shaders.damaged = true
   shaderTimer:after(.1, function() shaders.damaged = false end)
   
@@ -195,20 +191,21 @@ function collideBulletWithPlayer(b)
   b.dead = true
 end
 
-function collideWithZombie(zom)
+function collideWithZombie(zom, game)
   zom.dead = true
   zom.collideable = false
   if not player.isInvincible then
     player.health = player.health - zom.damage
     love.audio.play(soundFX.player_hit)
-    TextManager.playerDmgPopup(player.x, player.y, zom)
+    game.textManager.playerDmgPopup(player.x, player.y, zom)
     screenShake(.15, 1)
     shaders.damaged = true
     shaderTimer:after(.15, function() shaders.damaged = false end)
   else
-    spawnKillReward(zom)
+    spawnGoldReward(zom)
+    spawnXPReward(zom)
   end
-  round.currentKilled = round.currentKilled + 1
+  game.currentKilled = game.currentKilled + 1
 end
 
 --TODO - im a trash programmer

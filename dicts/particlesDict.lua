@@ -1,5 +1,9 @@
 local Particles = {}
 
+local function rgb(integer)
+  return integer/255
+end
+
 --Pistol
 Particles.pistol = {}
 Particles.pistol.p = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)

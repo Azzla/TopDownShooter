@@ -10,7 +10,7 @@ function ButtonManager.new(x, y, fn, s, sH, scale, clickSound)
   button.sprite = s
   button.spriteHot = sH
   button.fn = fn
-  button.clickSound = clickSound
+  button.clickSound = clickSound or nil
   button.clicked = 0
   button.id = #buttons+1
   

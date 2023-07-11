@@ -1,6 +1,6 @@
 local Inventory = {}
 
-function Inventory.init(keypressed)
+function Inventory.init()
   local inventory = {
     sprite_full = love.graphics.newImage('sprites/ui/inv_full.png'),
     sprite_select = love.graphics.newImage('sprites/ui/inv_select.png'),
@@ -11,24 +11,20 @@ function Inventory.init(keypressed)
     active_slot = 1
   }
   
-  function inventory:update(dt)
-    
-  end
-  
   function inventory:draw(origX, origY)
     love.graphics.draw(self.sprite_full, origX - self.inv_w/2, origY, nil, self.scale, self.scale)
     love.graphics.draw(self.sprite_select, origX - self.inv_w/2 + ((self.active_slot-1) * self.cel_w), origY, nil, self.scale, self.scale)
   end
   
-  --keybinds
-  for i=1,10 do
-    table.insert(keypressed, function(key, scancode)
+  function inventory:keybinds(key)
+    --keybinds
+    for i=1,10 do
       if tonumber(key) == i then
         inventory.active_slot = i
       elseif tonumber(key) == 0 then
         inventory.active_slot = 10
       end
-    end)
+    end
   end
   
   function love.wheelmoved( x, y )
