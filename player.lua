@@ -8,7 +8,7 @@ dashSystem:setSpeed(60)
 
 
 local sprite = love.graphics.newImage('sprites/characters/chrome.png')
-player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .6)
+player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .75)
 player.zoom = 4
 
 --powerups
@@ -156,6 +156,9 @@ function movementHandle(dt, speedUpgrade, game)
         collideBulletWithPlayer(other.parent, game)
       end
     end
+    
+    --melee
+    if other.parent.isMelee then return end
   end
 
   local goalX = player.x + player.vx * dt

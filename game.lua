@@ -12,7 +12,6 @@ map_height = mainMap.height * mainMap.tileheight
 
 require('guns')
 require('player')
-require('melees')
 require('zombie')
 require('bullets')
 require('grenades')
@@ -23,6 +22,14 @@ require('gameCam')
 require('energy')
 require('powerups')
 spawnPlayerHealthBar()
+
+function player_angle()
+  local a,b = cam:cameraCoords(cam:mousePosition())
+  local c,d = cam:cameraCoords(player.x, player.y)
+  return math.atan2(d - b, c - a) - math.pi/2
+end
+
+require('melees')
 
 local function drawObjects()
   --sort by which sprites should appear on top of others
@@ -78,7 +85,7 @@ function game:update(dt)
   
   cameraHandler(dt, player.x, player.y, currentZoom.zoom)
   playerUpdate(dt, shop.skills.speed, self)
-  updateMelee(dt)
+  updateMelee(dt, player_angle())
   zombieUpdate(dt, self)
   bulletUpdate(dt)
   autoShoot(dt)
@@ -107,7 +114,7 @@ function game:draw()
   
   --Objects
   drawObjects()
-  collisionDebug()
+  --collisionDebug()
   if not melee.active then drawGuns() end
   
   --Player
@@ -229,8 +236,12 @@ function game:keypressed(key)
     love.event.quit()
   elseif key == "escape" then
     Gamestate.switch(self.menu)
-  elseif key == 'f' and not melee.active then
-    meleeAttack()
+  elseif key == 'f' then
+    if shop.skills.grenades >= 1 then
+      love.audio.play(soundFX.dash)
+      spawnGrenade(self)
+      shop.skills.grenades = shop.skills.grenades - 1
+    end
   else
     gunKeybinds(key)
     player:keybinds(key, shop.skills.speed)
@@ -257,12 +268,8 @@ function game:mousereleased(x, y, btn)
         reload()
       end
       --grenades
-    elseif btn == 2 then
-      if shop.skills.grenades >= 1 then
-        love.audio.play(soundFX.dash)
-        spawnGrenade(self)
-        shop.skills.grenades = shop.skills.grenades - 1
-      end
+    elseif btn == 2 and not melee.active then
+      meleeAttack()
     end
   end
 end

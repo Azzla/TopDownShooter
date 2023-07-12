@@ -3,12 +3,6 @@ local ParticleManager = require('particleManager')
 local ParticlesDict = require('dicts/particlesDict')
 --local soundFX = require('sounds')
 
-function player_angle()
-  local a,b = cam:cameraCoords(cam:mousePosition())
-  local c,d = cam:cameraCoords(player.x, player.y)
-  return math.atan2(d - b, c - a) - math.pi/2
-end
-
 guns.pistol = {}
 guns.pistol.upgrades = {
   dmg = .5,
@@ -70,7 +64,7 @@ guns.sniper.reload = 3
 guns.sniper.cooldown = 1.2
 guns.sniper.pierce = 2 + guns.sniper.upgrades.pierce
 guns.sniper.pierceFalloff = 7
-guns.sniper.spread = player_angle
+guns.sniper.spread = function() return player_angle() end
 guns.sniper.zoomFactor = 7
 guns.sniper.pSpread = ParticlesDict.sniper.fire
 guns.sniper.pSys = ParticlesDict.sniper.p:clone()

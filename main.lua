@@ -62,6 +62,7 @@ function collisionDebug()
   for i,g in ipairs(grenades) do
     g.coll:draw('line')
   end
+  if melee.active then melee.coll:draw('line') end
   player:draw('line')
   love.graphics.setColor(1,1,1,1)
 end

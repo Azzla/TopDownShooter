@@ -133,6 +133,22 @@ function placeZombie(z, s)
   z.y = z._spawnY()
 end
 
+function zombieDies(obj, z, game)
+  z.collideable = false
+  z.dead = true
+  
+  --death effects
+  local deathP = ZombieParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 2 + ((obj.speed - 250) / 100), 3)
+  ZombieParticleManager.spawn(deathP.psys, math.random(24,36), obj.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
+  spawnBlood(z.x,z.y)
+  
+  game.totalKilled = game.totalKilled + 1
+  game.currentKilled = game.currentKilled + 1
+  spawnGoldReward(z)
+  spawnXPReward(z)
+  powerupChance(z)
+end
+
 function collideWithBullet(b, z, game)
   if b.id ~= z.id then
     ZombieParticleManager.spawn(z.p.psys, math.random(12,24), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
@@ -160,19 +176,7 @@ function collideWithBullet(b, z, game)
     love.audio.play(soundFX.zombies.hit)
 
     if z.health <= 0 then
-      z.collideable = false
-      z.dead = true
-      
-      --death effects
-      local deathP = ZombieParticleManager.tempNew(z.x, z.y, bloodSystem:clone(), 2 + ((b.speed - 250) / 100), 3)
-      ZombieParticleManager.spawn(deathP.psys, math.random(24,36), b.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
-      spawnBlood(z.x,z.y)
-      
-      game.totalKilled = game.totalKilled + 1
-      game.currentKilled = game.currentKilled + 1
-      spawnGoldReward(z)
-      spawnXPReward(z)
-      powerupChance(z)
+      zombieDies(b, z, game)
     end
 
     if b.pierce == 0 then b.dead = true
@@ -181,6 +185,32 @@ function collideWithBullet(b, z, game)
       b.damage = b.damage - b.pierceFalloff
       if b.damage <= 1 then b.damage = 1 end
     end
+  end
+end
+
+function collideWithMelee(melee, z, game)
+  z.hitByMelee = true
+  ZombieParticleManager.spawn(z.p.psys, math.random(12,24), melee.equipped.direction - math.pi/2 - math.pi/8, math.pi/4, 3)
+  
+  z.zombieDamaged = true
+  z.healthBar.isHidden = false
+  shaderTimer:after(.08, function() z.zombieDamaged = false end)
+  
+  --Damage
+  z.health = z.health - melee.equipped.dmg
+  TextManager.bulletDmgPopup(melee.equipped.dmg, z)
+  
+  z.vx = z.vx * melee.equipped.knockback
+  z.vy = z.vy * melee.equipped.knockback
+  z.speed = z.speed * melee.equipped.slowdown
+  
+  love.audio.stop(soundFX.zombies.hit)
+  love.audio.play(soundFX.zombies.hit)
+
+  if z.health <= 0 then
+    zombieDies(melee.equipped, z, game)
+  else
+    spawnTweenTimer:after(1, function() z.hitByMelee = false end)
   end
 end
 
@@ -202,13 +232,6 @@ function short_angle_dist(from, to)
   local max_angle = math.pi * 2
   local difference = math.fmod(to - from, max_angle)
   return math.fmod(2 * difference, max_angle) - difference
-end
-
-local zombieFilter = function(item, other)
-  if other.isZombie then return 'slide'
-  elseif other.isBullet then return 'cross'
-  elseif other.isGrenade then return 'bounce'
-  elseif other.isPlayer then return 'cross' end
 end
 
 function zombieMoveHandler(zom,  dt, game)
@@ -235,6 +258,14 @@ function zombieMoveHandler(zom,  dt, game)
       local collides, dx, dy = zom.coll:collidesWith(other)
       if collides and not other.parent.isEnemyBullet and not other.parent.dead then
         collideWithBullet(other.parent, zom, game)
+      end
+    end
+    
+    --melee
+    if other.parent and other.parent.equipped and zom.collideable then
+      local collides, dx, dy = zom.coll:collidesWith(other)
+      if collides and not zom.hitByMelee then
+        collideWithMelee(other.parent, zom, game)
       end
     end
   end

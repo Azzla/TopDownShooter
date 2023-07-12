@@ -22,6 +22,7 @@ function soundFX:loadSoundFX()
   soundFX.explosion = love.audio.newSource('sounds/explosion.mp3', 'static')
   soundFX.annihilate = love.audio.newSource('sounds/annihiliate.mp3', 'static')
   soundFX.collectCoin = love.audio.newSource('sounds/collectCoin.mp3', 'static')
+  soundFX.swordslash = love.audio.newSource('sounds/swordslash.mp3', 'static')
   
   soundFX.cockPistol = love.audio.newSource('sounds/cockPistol.mp3', 'static')
   soundFX.sniper = love.audio.newSource('sounds/sniper.mp3', 'static')
@@ -58,6 +59,7 @@ function soundFX:loadSoundFX()
   soundFX.assaultLazer:setVolume(.24)
   soundFX.railgun_in:setVolume(.3)
   soundFX.railgun_out:setVolume(.4)
+  soundFX.swordslash:setVolume(.5)
   
   soundFX.lazer:setVolume(.4)
   soundFX.pistol:setVolume(.3)
@@ -104,7 +106,7 @@ function gameMusic(dt, game)
     end
     
     if soundFX.music:getVolume() ~= 1 then soundFX.music:setVolume(1) end
-    if soundFX.music2:getVolume() ~= .06 then soundFX.music2:setVolume(.06) end
+    if soundFX.music2:getVolume() ~= .04 then soundFX.music2:setVolume(.04) end
     if soundFX.musicBoss:getVolume() ~= .35 then soundFX.musicBoss:setVolume(.35) end
   end
   
