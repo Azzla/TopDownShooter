@@ -12,6 +12,7 @@ map_height = mainMap.height * mainMap.tileheight
 
 require('guns')
 require('player')
+require('melees')
 require('zombie')
 require('bullets')
 require('grenades')
@@ -43,7 +44,7 @@ function game:init()
   
   self.difficulty = 1
   self.timeBetweenSpawns = 1.4
-  self.roundTime = 20 -- seconds
+  self.roundTime = 5 -- seconds
   self.roundTimeReset = 20
   self.next = true
   self.canSpawn = true
@@ -77,6 +78,7 @@ function game:update(dt)
   
   cameraHandler(dt, player.x, player.y, currentZoom.zoom)
   playerUpdate(dt, shop.skills.speed, self)
+  updateMelee(dt)
   zombieUpdate(dt, self)
   bulletUpdate(dt)
   autoShoot(dt)
@@ -105,7 +107,8 @@ function game:draw()
   
   --Objects
   drawObjects()
-  drawGuns()
+  collisionDebug()
+  if not melee.active then drawGuns() end
   
   --Player
   if shaders.damaged then love.graphics.setShader(damagedPlayerShader) end
@@ -115,7 +118,12 @@ function game:draw()
     love.graphics.setShader(invincibilityShader)
   end
   
-  drawPlayer()
+  if melee.active then
+    drawMelee()
+  else
+    drawPlayer()
+  end
+  
   pausedAngle = player_angle()
   love.graphics.setShader()
 
@@ -158,12 +166,6 @@ function game:drawUI()
   love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
   love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
   
-  --XP
-  local xpOffsetsX,xpOffsetsY = 50,-2
-  love.graphics.printf("lvl " .. exp.currentLevel, origin + 38 + xpOffsetsX, origin2 + 11 + xpOffsetsY, 100, "right", nil, .35, .35)
-  love.graphics.draw(game.uiBox2, origin + 20 + xpOffsetsX, origin2 + 2 + xpOffsetsY)
-  drawXPBar(origin + 22 + xpOffsetsX, origin2 + 5 + xpOffsetsY,expBarTweenCurr.w,expBarTweenCurr.h)
-  
   --Timer
   love.graphics.printf(math.ceil(self.roundTime), originRight - 25, origin2 + 5, 50)
   
@@ -175,9 +177,14 @@ function game:drawUI()
   
   --Round
   love.graphics.draw(self.uiBox, origin + 2, origin2 + 21)
-  love.graphics.printf("Round", origin + 16, origin2 + 24, 100, "left", nil, .6, .6)
-  love.graphics.draw(self.uiBox, origin + 2, origin2 + 37)
-  love.graphics.printf(self.difficulty, origin + 28, origin2 + 40, 100, "left", nil, .6, .6)
+  love.graphics.printf("Round", origin + 10, origin2 + 24.5, 100, "left", nil, .5, .5)
+  love.graphics.printf(self.difficulty, origin + 44, origin2 + 24.5, 100, "left", nil, .5, .5)
+  
+  --XP
+  local xpOffsetsX,xpOffsetsY = -17,33
+  love.graphics.printf("lvl " .. exp.currentLevel, origin + 38 + xpOffsetsX, origin2 + 11 + xpOffsetsY, 100, "right", nil, .35, .35)
+  love.graphics.draw(game.uiBox2, origin + 20 + xpOffsetsX, origin2 + 2 + xpOffsetsY)
+  drawXPBar(origin + 22 + xpOffsetsX, origin2 + 5 + xpOffsetsY,expBarTweenCurr.w,expBarTweenCurr.h)
   
   cam:detach()
 end
@@ -222,6 +229,8 @@ function game:keypressed(key)
     love.event.quit()
   elseif key == "escape" then
     Gamestate.switch(self.menu)
+  elseif key == 'f' and not melee.active then
+    meleeAttack()
   else
     gunKeybinds(key)
     player:keybinds(key, shop.skills.speed)
@@ -251,7 +260,7 @@ function game:mousereleased(x, y, btn)
     elseif btn == 2 then
       if shop.skills.grenades >= 1 then
         love.audio.play(soundFX.dash)
-        spawnGrenade()
+        spawnGrenade(self)
         shop.skills.grenades = shop.skills.grenades - 1
       end
     end
@@ -260,7 +269,10 @@ end
 
 function game:enter(previous)
   if not self.menu then self.menu = previous end
-  player.health = 100
+  if previous == self.menu then
+    self:removeObjects()
+    player.health = 100
+  end
 end
 
 function game:removeObjects(removeParams) -- { zombies = true, powerups = true }

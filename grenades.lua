@@ -17,7 +17,7 @@ explosionSystem:setParticleLifetime (.05, .4)
 explosionSystem:setSizes(2, 1, 1.5, .5)
 explosionSystem:setSpeed(60,80)
 
-function spawnGrenade()
+function spawnGrenade(game)
   local grenade = {}
   grenade.isGrenade = true
   grenade.canCollide = true
@@ -50,7 +50,7 @@ function spawnGrenade()
     
     for i,z in ipairs(zombies) do
       if distanceBetween(grenade.x, grenade.y, z.x, z.y) <= grenade.dmgRadius then
-        TextManager.grenadeDmgPopup(grenade, z)
+        game.textManager.grenadeDmgPopup(grenade, z)
         GrenadeParticleManager.spawn(z.p.psys, math.random(12,24), grenade_angle(grenade, z) - math.pi/2 - math.pi/8, math.pi/4, 3)
         
         z.zombieDamaged = true
@@ -63,8 +63,8 @@ function spawnGrenade()
         
         if z.health <= 0 then
           z.dead = true
-          round.totalKilled = round.totalKilled + 1
-          round.currentKilled = round.currentKilled + 1
+          game.totalKilled = game.totalKilled + 1
+          game.currentKilled = game.currentKilled + 1
           spawnGoldReward(z)
           spawnXPReward(z)
           powerupChance(z)
@@ -79,8 +79,6 @@ function spawnGrenade()
   end
   
   grenade.timer:after(grenade.time, grenade.explode)
-  
---  world:add(grenade, grenade.x - grenadeSprite:getWidth()/2, grenade.y - grenadeSprite:getHeight()/2, grenadeSprite:getWidth(), grenadeSprite:getHeight())
   table.insert(grenades, grenade)
 end
 
@@ -151,7 +149,6 @@ function grenadeUpdate(dt)
   for i=#grenades,1,-1 do
     local g = grenades[i]
     if g.x < 0 or g.y < 0 or g.x > love.graphics.getWidth() or g.y > love.graphics.getHeight() then
---      world:remove(g)
       table.remove(grenades, i)
     end
   end
@@ -159,7 +156,6 @@ function grenadeUpdate(dt)
   for i=#grenades,1,-1 do
     local g = grenades[i]
     if g.dead then
---      world:remove(g)
       table.remove(grenades, i)
     end
   end

@@ -8,7 +8,7 @@ dashSystem:setSpeed(60)
 
 
 local sprite = love.graphics.newImage('sprites/characters/chrome.png')
-player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .75)
+player = HC.rectangle(map_width / 2, map_height / 2, sprite:getWidth() * .75, sprite:getHeight() * .6)
 player.zoom = 4
 
 --powerups
@@ -92,12 +92,6 @@ function walkAnimation(dt)
   else
     player.animation:gotoFrame(1)
     love.audio.pause(soundFX.move)
-  end
-end
-
-local playerFilter = function(item, other)
-  if other.isBullet then return nil
-  elseif other.isZombie then return 'cross'
   end
 end
 

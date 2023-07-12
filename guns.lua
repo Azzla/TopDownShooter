@@ -93,7 +93,7 @@ function gunKeybinds(key)
     love.audio.play(soundFX.pumpAction)
   end
   
-  if Gamestate.current() == game and canReload and key == 'r' then
+  if canReload and key == 'r' then
     reload()
   end
 end

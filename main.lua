@@ -37,11 +37,7 @@ function love.update(dt)
   globalTimer.update(dt)
 end
 
-function love.draw()
-  ----------------
-  --collisionDebug()
-  ----------------
-end
+function love.draw() end
 
 function cameraCoordinates(c, scale)
   local o,o2 = c:worldCoords(0,0)
@@ -56,20 +52,18 @@ end
 --------UTILITIES--------
 -------------------------
 function collisionDebug()
-  if Gamestate.current() == game then
-    love.graphics.setColor(1,0,0,1)
-    for i,b in ipairs(bullets) do
-      b.coll:draw('line')
-    end
-    for i,z in ipairs(zombies) do
-      z.coll:draw('line')
-    end
-    for i,g in ipairs(grenades) do
-      g.coll:draw('line')
-    end
-    player:draw('line')
-    love.graphics.setColor(1,1,1,1)
+  love.graphics.setColor(1,0,0,1)
+  for i,b in ipairs(bullets) do
+    b.coll:draw('line')
   end
+  for i,z in ipairs(zombies) do
+    z.coll:draw('line')
+  end
+  for i,g in ipairs(grenades) do
+    g.coll:draw('line')
+  end
+  player:draw('line')
+  love.graphics.setColor(1,1,1,1)
 end
 
 function dump(o)
