@@ -1,11 +1,3 @@
-local function rgb(integer)
-  return integer/255
-end
-
-energy = {}
-energy.width = 0
-energy.height = 1
-
 reloader = {}
 reloader.width = 0
 reloader.height = 3
@@ -14,17 +6,9 @@ local target = {}
 target.width = 50
 target.height = 3
 
-local target2 = {}
-target2.width = 15
-target2.height = 1
-
-dashTween = tween.new(2.7, energy, target2)
 reloadTween = tween.new(guns.equipped.reload, reloader, target)
 
 function energyUpdate(dt)
-  if energy.width ~= target.width then
-    dashTween:update(dt)
-  end
   if reloader.width ~= target.width then
     reloadTween:update(dt)
   end

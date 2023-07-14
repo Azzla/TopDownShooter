@@ -7,10 +7,12 @@ anim8 = require('libs/anim8/anim8')
 HC = require('libs/hardoncollider')
 require('sounds')
 soundFX:loadSoundFX()
+require('utilities')
 require('shaders')
 
 love.graphics.setDefaultFilter("nearest", "nearest")
 local menu = require('menu')
+local pickplayer = require('states/pickPlayer')
 local game = require('game')
 local pause = {}
 local gameOver = {}
@@ -21,7 +23,7 @@ function love.load()
   SCREEN_H = love.graphics.getHeight()
   
   Gamestate.registerEvents()
-  Gamestate.push(menu, game)
+  Gamestate.push(menu, pickplayer, game)
   
   --font
   pixelFont = love.graphics.newFont('fonts/Minecraft.ttf', 16)

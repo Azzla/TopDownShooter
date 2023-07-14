@@ -29,11 +29,12 @@ end
 local function lunge(p_dist, z, dt)
   if z.canLunge then
     if p_dist < z.lungeDist then
-      decision_timer:after(z.lungeTime, function() z.speed = z.speedMax end)
+      local oldSpeed = z.speed
+      decision_timer:after(z.lungeTime, function() z.speed = oldSpeed end)
       decision_timer:after(z.lungeTime * 3, function() z.canLunge = true end)
       
       z.canLunge = false
-      z.speed = z.speedMax * 2.5
+      z.speed = z.speedMax * 1.5
       z.animation:gotoFrame(1)
       z.animation:resume()
     end
@@ -43,10 +44,11 @@ end
 local function every_lunge(p_dist, z, dt)
   if z.everyLunge then
     z.everyLunge = false
-    decision_timer:every(math.random(4,10), function()
-      decision_timer:after(z.lungeTime, function() z.speed = z.speedMax end)
+    decision_timer:every(math.random(5,10), function()
+      local oldSpeed = z.speed
+      decision_timer:after(z.lungeTime, function() z.speed = oldSpeed end)
       
-      z.speed = z.speedMax * 1.5
+      z.speed = z.speedMax
       z.animation:gotoFrame(1)
       z.animation:resume()
     end)

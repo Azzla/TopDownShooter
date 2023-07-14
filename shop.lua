@@ -88,8 +88,8 @@ function shop:init()
       end
     end,
     function()
-      if gold.total >= self.skills.price and player.health < player.healthBar.totalHealth then
-        addPurchasedHealth()
+      if gold.total >= self.skills.price and player.hp < player.maxHp then
+        player:addHealth()
         self:purchase()
       end
     end
@@ -121,14 +121,13 @@ function shop:draw()
   love.graphics.setShader()
   
   self:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter,ret1,ret2)
---    displayUpgrades()
   
   cam:detach()
   cam:zoomTo(currentZoom.zoom)
 end
 
 function shop:enter(previous)
-  self.backStateRef = previous
+  if not self.game then self.game = previous end
 end
 
 local function uiBox(skill, x, y, num)
@@ -148,7 +147,7 @@ local function nextRound()
       
       soundFX.music:setVolume(.3)
       shop.nextClicked = false
-      Gamestate.switch(shop.backStateRef)
+      Gamestate.switch(shop.game)
     end)
   end
 end
@@ -159,20 +158,20 @@ function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,orig
     for i=1,#self.purchases do
       local fn = self.purchases[i]
       if i == 1 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 60, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 60, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 2 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 90, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 90, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 3 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 120, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 120, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 4 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 150, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 150, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 5 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 180, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter - 105, origin2 + 180, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 6 then
-        shopButtonManager.new(originXCenter + 22, origin2 + 155, fn, self.buttonSprite, self.buttonSpriteHot)
+        shopButtonManager.new(originXCenter + 22, origin2 + 155, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       end
       
-      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, self.continue, self.continueHover)
+      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, self.continue, self.continueHover, 1, soundFX.charSelect, soundFX.btnHover)
     end
     self.buttons = shopButtonManager.getButtons()
     self.btnsCreated = true
@@ -211,11 +210,11 @@ function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,orig
     
     --Current Health Display
     love.graphics.print("Health ( +25 )", originXCenter + 35, originYCenter + 37, nil, self.textScale, self.textScale)
-    love.graphics.print("Current: " .. player.health, originXCenter + 30, originYCenter + 58, nil, 1/3, 1/3)
+    love.graphics.print("Current: " .. player.hp, originXCenter + 30, originYCenter + 58, nil, 1/3, 1/3)
     love.graphics.print("Max: 100", originXCenter + 65, originYCenter + 58, nil, 1/3, 1/3)
     love.graphics.draw(self.uiBox3, originXCenter + 30, originYCenter + 47, nil)
-    player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
-    love.graphics.draw(player.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
+    --player.healthBar.animation:draw(player.healthBar.sprite, originXCenter + 29, originYCenter + 45, nil, 5, 5)
+    love.graphics.draw(self.game.heartIcon, originXCenter + 33, originYCenter + 47, nil, nil, nil, 4)
   end
   
   --Continue Button

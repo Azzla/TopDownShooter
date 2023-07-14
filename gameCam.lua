@@ -1,6 +1,6 @@
 cameraFile = require('libs/hump/camera')
 cam = cameraFile()
-cam:lookAt(player.x, player.y)
+--cam:lookAt(player.x, player.y)
 local camSmoothing = cam.smooth.damped(8)
 
 local camTimer = globalTimer.new()

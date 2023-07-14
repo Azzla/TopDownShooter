@@ -262,7 +262,7 @@ function zombieMoveHandler(zom,  dt, game)
     end
     
     --melee
-    if other.parent and other.parent.equipped and zom.collideable then
+    if other.parent and other.parent.equipped and zom.collideable and other.parent.canCollide then
       local collides, dx, dy = zom.coll:collidesWith(other)
       if collides and not zom.hitByMelee then
         collideWithMelee(other.parent, zom, game)

@@ -210,7 +210,7 @@ guns.deagle.reload = 2
 guns.deagle.cooldown = .6
 guns.deagle.pierce = 0
 guns.deagle.zoomFactor = 7
-guns.deagle.spread = player_angle
+guns.deagle.spread = function() return player_angle() end
 guns.deagle.pSpread = ParticlesDict.deagle.fire
 guns.deagle.pSys = ParticlesDict.deagle.p:clone()
 
@@ -345,7 +345,7 @@ guns.railgun.clipSize = 5 + guns.railgun.upgrades.clipSize
 guns.railgun.reload = 4
 guns.railgun.cooldown = 2.5 / guns.railgun.upgrades.cooldown
 guns.railgun.pierce = 100
-guns.railgun.spread = player_angle
+guns.railgun.spread = function() return player_angle() end
 guns.railgun.zoomFactor = 7
 guns.railgun.pSpread = ParticlesDict.railgun.fire
 guns.railgun.pSys = ParticlesDict.railgun.p:clone()

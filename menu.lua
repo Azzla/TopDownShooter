@@ -1,4 +1,3 @@
-local menuButtonManager = require('buttonManager')
 local menu = {}
 
 function menu:init()
@@ -8,12 +7,10 @@ function menu:init()
   self.button = love.graphics.newImage('sprites/ui/UIBox1.png')
   self.buttonHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
   self.buttonScale = 8
-  self.menuBtnsDrawn = false
-  self.backBtnDrawn = false
-  
+  self.buttonManager = require('buttonManager')
   self.btnFunctions = {
     function()
-      Gamestate.switch(self.game)
+      Gamestate.switch(self.picker, self.game)
     end,
     function()
       return
@@ -25,39 +22,32 @@ function menu:init()
 end
 
 function menu:draw()
-  local screen_width = love.graphics.getWidth()
-  local screen_height = love.graphics.getHeight()
   local ret1, ret2 = love.mouse:getPosition()
-  
-  self.backBtnDrawn = false
-  love.graphics.draw(self.background, 0, 0, nil, screen_width / self.bgWidth, screen_height / self.bgHeight)
+  love.graphics.draw(self.background, 0, 0, nil, SCREEN_W / self.bgWidth, SCREEN_H / self.bgHeight)
 
-  if not self.menuBtnsDrawn then
-    for i=1,#self.btnFunctions do
-      menuButtonManager.new(32, screen_height - (128 * i), self.btnFunctions[#self.btnFunctions + 1 - i],
-      self.button, self.buttonHover, self.buttonScale)
-    end
-    self.menuBtnsDrawn = true
-  end
-
-  menuButtonManager.draw(ret1, ret2)
+  self.buttonManager.draw(ret1, ret2)
   
   --Text
-  love.graphics.print("PLAY", 190, screen_height - (117 * 3), nil, 3, 3)
-  love.graphics.print("HELP", 190, screen_height - (112 * 2), nil, 3, 3)
-  love.graphics.print("QUIT", 190, screen_height - (96 * 1), nil, 3, 3)
+  love.graphics.print("PLAY", 190, SCREEN_H - (117 * 3), nil, 3, 3)
+  love.graphics.print("HELP", 190, SCREEN_H - (112 * 2), nil, 3, 3)
+  love.graphics.print("QUIT", 190, SCREEN_H - (96 * 1), nil, 3, 3)
 
   love.graphics.draw(reticle, ret1, ret2,nil,4,4,3,3)
 end
 
-function menu:enter(previous, game)
+function menu:enter(previous, picker, game)
+  if not self.picker then self.picker = picker end
   if not self.game then self.game = game end
+  
+  --create buttons
+  for i=1,#self.btnFunctions do
+    self.buttonManager.new(32, SCREEN_H - (128 * i), self.btnFunctions[#self.btnFunctions + 1 - i],
+    self.button, self.buttonHover, self.buttonScale, soundFX.charSelect, soundFX.btnHover)
+  end
 end
 
 function menu:leave()
-  menuButtonManager.clear()
-  self.menuBtnsDrawn = false
-  self.backBtnDrawn = false
+  self.buttonManager.clear()
 end
 
 return menu

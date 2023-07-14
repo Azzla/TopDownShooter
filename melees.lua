@@ -39,14 +39,17 @@ function meleeAttack()
   melee.coll:rotate(player_angle() + math.pi/2, player.x, player.y)
   melee.coll.parent = melee
   melee.colliding = true
+  melee.canCollide = false
   love.audio.play(soundFX.swordslash)
+  
+  melee.timer:after(.1, function() melee.canCollide = true end)
   
   melee.timer:after(melee.equipped.swipeTime, function()
     melee.active = false
     canShoot = true
   end)
   
-  melee.timer:after(.5, function()
+  melee.timer:after(.55, function()
     melee.colliding = false
     HC.remove(melee.coll)
     melee.tween:reset()

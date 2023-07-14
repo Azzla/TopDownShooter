@@ -11,7 +11,7 @@ map_width = mainMap.width * mainMap.tilewidth
 map_height = mainMap.height * mainMap.tileheight
 
 require('guns')
-require('player')
+player = require('player')
 require('zombie')
 require('bullets')
 require('grenades')
@@ -21,7 +21,6 @@ require('expManager')
 require('gameCam')
 require('energy')
 require('powerups')
-spawnPlayerHealthBar()
 
 function player_angle()
   local a,b = cam:cameraCoords(cam:mousePosition())
@@ -52,7 +51,7 @@ function game:init()
   self.difficulty = 1
   self.timeBetweenSpawns = 1.4
   self.roundTime = 5 -- seconds
-  self.roundTimeReset = 20
+  self.roundTimeReset = 30
   self.next = true
   self.canSpawn = true
   self.zombiesSpawned = 0
@@ -62,6 +61,8 @@ function game:init()
   self.uiBox = love.graphics.newImage('sprites/ui/UIBox1.png')
   self.uiBox2 = love.graphics.newImage('sprites/ui/UIBox2.png')
   self.uiBox3 = love.graphics.newImage('sprites/ui/UIBox3.png')
+  self.heartIcon = love.graphics.newImage('sprites/heartIcon.png')
+  self.ammoIcon = love.graphics.newImage('sprites/energyIcon.png')
   self.bulletCount = 0
   self.isDespawning = false
   self.despawnText = false
@@ -82,9 +83,10 @@ end
 function game:update(dt)
   self.runRoundTimer(self, dt)
   self.roundTimer:update(dt)
+  self.textManager.update(dt, self)
+  player:update(dt, shop.skills.speed, self)
   
   cameraHandler(dt, player.x, player.y, currentZoom.zoom)
-  playerUpdate(dt, shop.skills.speed, self)
   updateMelee(dt, player_angle())
   zombieUpdate(dt, self)
   bulletUpdate(dt)
@@ -94,14 +96,13 @@ function game:update(dt)
   updateXP(dt, shop.skills.magnet)
   energyUpdate(dt)
   powerupUpdate(dt, self, shop.skills.magnet)
-  self.textManager.update(dt, self)
+  
   updateShaderTimers(dt)
   mainMap:update(dt)
-  if player.canDash == false then
-    dashTimer:update(dt)
-  end
   
-  game:despawning()
+  if not self.canSpawn and self.next then
+    game:despawning()
+  end
 end
 
 function game:draw()
@@ -128,7 +129,7 @@ function game:draw()
   if melee.active then
     drawMelee()
   else
-    drawPlayer()
+    player:draw()
   end
   
   pausedAngle = player_angle()
@@ -138,14 +139,14 @@ function game:draw()
   self.textManager.drawGame()
   
   --Energy
-  drawEnergy(player.x - 6.7, player.y + 10, energy.width, energy.height, player.isRecharge)
+  drawEnergy(player.x - 6.7, player.y + 10, player.stamina.width, player.stamina.height, player.isRecharge)
   
   local ret1,ret2 = cam:mousePosition()
   local fix = 0
   if guns.equipped == guns['railgun'] then fix = 60 end
   local offX,offY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY+fix,player_angle())
   
-  love.graphics.draw(reticle, ret1+offX, ret2+offY,nil,nil,nil,3,3)
+  love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
   love.graphics.setShader()
   
   self:drawUI()
@@ -160,14 +161,14 @@ function game:drawUI()
   cam:attach()
   --Health
   love.graphics.draw(self.uiBox3, origin + 5, origin2Bot - 12)
-  player.healthBar.animation:draw(player.healthBar.sprite, origin + 4, origin2Bot - 14, nil, 5, 5)
-  love.graphics.draw(player.heartIcon, origin + 8, origin2Bot - 12, nil, nil, nil, 4)
+  --player.healthBar.animation:draw(player.healthBar.sprite, origin + 4, origin2Bot - 14, nil, 5, 5)
+  love.graphics.draw(self.heartIcon, origin + 8, origin2Bot - 12, nil, nil, nil, 4)
   
   --Reload
   love.graphics.printf(guns.equipped.currAmmo .. "/" .. guns.equipped.clipSize, origin - 19, origin2Bot - 34, 100, "right", nil, .8, .8)
   love.graphics.draw(game.uiBox2, origin + 7, origin2Bot - 22)
   drawReload(origin + 9, origin2Bot - 19, reloader.width, reloader.height)
-  love.graphics.draw(player.ammoIcon, origin + 12, origin2Bot - 23, nil, nil, nil, 6)
+  love.graphics.draw(self.ammoIcon, origin + 12, origin2Bot - 23, nil, nil, nil, 6)
   
   --Gold
   love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
@@ -205,37 +206,38 @@ function game:runRoundTimer(dt)
 end
 
 function game:despawning()
-  if not self.canSpawn and self.next then
-    self.next = false
-    self.zombiesSpawned = 0
-    self.currentKilled = 0
-    self.bulletCount = 0
+  self.next = false
+  self.zombiesSpawned = 0
+  self.currentKilled = 0
+  self.bulletCount = 0
+  
+  self:removeObjects({coins = true, xp = true})
+  shop.skills.magnet = shop.skills.magnet * self.despawnMagBonus
+  self.isDespawning = true
+  self.despawnText = false
+  
+  self.dropIndex = self.textManager.dropsDespawning(self.despawnTime)
+  
+  self.roundTimer:after(self.despawnTime, function()
+    self.isDespawning = false
+    self.canSpawn = true
+    self.next = true
+    self.roundTime = self.roundTimeReset
+    shop.skills.magnet = shop.skills.magnet / self.despawnMagBonus
+    self.difficulty = self.difficulty + 1
     
-    self:removeObjects({coins = true, xp = true})
-    shop.skills.magnet = shop.skills.magnet * self.despawnMagBonus
-    self.isDespawning = true
-    self.despawnText = false
-    
-    self.dropIndex = self.textManager.dropsDespawning(self.despawnTime)
-    
-    self.roundTimer:after(self.despawnTime, function()
-      self.isDespawning = false
-      self.canSpawn = true
-      self.next = true
-      self.roundTime = self.roundTimeReset
-      shop.skills.magnet = shop.skills.magnet / self.despawnMagBonus
-      self.difficulty = self.difficulty + 1
-      
-      Gamestate.switch(shop)
-    end)
-  end
+    Gamestate.switch(shop)
+  end)
 end
 
 function game:keypressed(key)
   if key == "end" then
     love.event.quit()
   elseif key == "escape" then
-    Gamestate.switch(self.menu)
+    player:destroy()
+    Gamestate.switch(self.picker)
+  elseif key == "right" then
+    game:despawning()
   elseif key == 'f' then
     if shop.skills.grenades >= 1 then
       love.audio.play(soundFX.dash)
@@ -274,11 +276,11 @@ function game:mousereleased(x, y, btn)
   end
 end
 
-function game:enter(previous)
-  if not self.menu then self.menu = previous end
-  if previous == self.menu then
+function game:enter(previous, character)
+  if not self.picker then self.picker = previous end
+  if previous == self.picker then
     self:removeObjects()
-    player.health = 100
+    player:init(character)
   end
 end
 

@@ -5,6 +5,9 @@ musicStarted = false
 love.audio.setVolume(1)
 
 function soundFX:loadSoundFX()
+  soundFX.btnHover = love.audio.newSource('sounds/btnHover.wav', 'static')
+  soundFX.charSelect = love.audio.newSource('sounds/charSelect.wav', 'static')
+  
   soundFX.lazer = love.audio.newSource('sounds/lazer2.mp3', 'static')
   soundFX.pistol = love.audio.newSource('sounds/pistol.mp3', 'static')
   soundFX.reload = love.audio.newSource('sounds/reload.mp3', 'static')
