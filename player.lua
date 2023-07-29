@@ -2,6 +2,8 @@ local player = {}
 
 function player:init(character)
   self.particleManager = require('particleManager')
+  self.botManager = require('botManager')
+  self.botManager:init(self)
   self.dashSystem = love.graphics.newParticleSystem(love.graphics.newImage('sprites/pfx/particle2.png'), 100)
   self.dashSystem:setParticleLifetime (.05, .3)
   self.dashSystem:setSizes(1)
@@ -36,7 +38,6 @@ function player:init(character)
   end
   
   self.coll = HC.rectangle(map_width / 2, map_height / 2, self.w * .75, self.h * .75)
-  
   self.isPlayer = true
   self.isInvincible = false
   self.damageUp = false
@@ -73,6 +74,7 @@ end
 function player:draw()
   self.animation:draw(self.spriteWalk, self.x, self.y, player_angle(), 1, 1, self.w/2, 1 + self.h/2)
   self.particleManager.draw(self.dashP.psys, self.x, self.y)
+  self.botManager:draw()
 end
 
 function player:update(dt, speedUpgrade, game)
@@ -91,7 +93,7 @@ function player:update(dt, speedUpgrade, game)
   --death
   if self.hp <= 0 then
     self.hp = self.maxHp
-    Gamestate.switch(game.menu)
+    Gamestate.switch(game.picker)
   end
   
   --movement
@@ -155,6 +157,12 @@ function player:update(dt, speedUpgrade, game)
   
   self.coll:moveTo(goalX,goalY)
   self.coll:setRotation(player_angle())
+end
+
+function player:angle()
+  local a,b = cam:cameraCoords(cam:mousePosition())
+  local c,d = cam:cameraCoords(self.x, self.y)
+  return math.atan2(d - b, c - a) - math.pi/2
 end
 
 function player:collide(object, game)

@@ -1,3 +1,5 @@
+--TODO: All this code fucking sucks
+
 powerupsActive = {}
 powerups = {}
 --sprites
@@ -31,7 +33,7 @@ function spawnPowerup(index, zombie)
   powerup.dead = false
   powerup.timer = powerupTimer:new()
   powerup.active = false
-  powerup.hitRadius = 12
+  powerup.hitRadius = 8
   powerup.collision = true
   powerup.duration = 1
   powerup.speed = math.random(70, 120)
@@ -56,7 +58,7 @@ end
 function powerupChance(zombie)
   local random = math.random(1, 100)
   
-  if random > 97 then
+  if random > 101 then
     --chances
     local chances = {100,200,300,400} --health / damage / speed / invincibility
     local total = chances[#chances] --value of last item in table
@@ -83,9 +85,9 @@ function activatePowerup(powerup)
   
   if powerup.id == 1 then
     -- health up
-    if (player.health < 100) then
-      player.health = player.health + healthUpHealth
-      if player.health > 100 then player.health = 100 end
+    if (player.hp < 100) then
+      player.hp = player.hp + healthUpHealth
+      if player.hp > player.maxHp then player.hp = player.maxHp end
     end
     love.audio.play(soundFX.health)
   elseif powerup.id == 2 then
@@ -107,7 +109,7 @@ function drawPowerups()
   for i,p in ipairs(powerupsActive) do
     if p.isVisible == true then
       love.graphics.setColor(1,1,1,powerupAlpha.alpha)
-      love.graphics.draw(p.sprite, p.x, p.y, nil, nil, nil, 8, 8)
+      love.graphics.draw(p.sprite, p.x, p.y, nil, 1, 1, 8, 8)
       love.graphics.setColor(1,1,1,1)
     end
   end

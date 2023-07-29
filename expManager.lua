@@ -3,9 +3,9 @@ local TextManager = require('textManager')
 exp_instances = {}
 exp = {}
 exp.currentLevel = 1
-exp.levelMulti = 1.04 --how much the xp required for level up increases per level
+exp.levelMulti = 1.05 --how much the xp required for level up increases per level
 exp.currentXP = 0
-exp.expRequirement = 11 -- how much xp is required at start
+exp.expRequirement = 100 -- how much xp is required at start
 exp.value = 10
 
 local expSprite = love.graphics.newImage('sprites/coins/exp.png')
@@ -30,17 +30,19 @@ expBarTweenTarget =
 local xpTween = tween.new(.4, expBarTweenCurr, expBarTweenTarget)
 
 
-function updateXP(dt, magnet)
+function updateXP(dt, magnet, despawning)
   xpTween:update(dt)
   for i,x in ipairs(exp_instances) do
     if x.anim then x.anim:update(dt) end
     local expDistance = distanceBetween(x.x, x.y, player.x, player.y)
     
-    if expDistance > collectionDist and expDistance < (8 * magnet) then
+    if expDistance > collectionDist and expDistance < (10 * magnet) then
       x.x = x.x + math.cos(zombie_angle_wrld(x)) * x.speed * dt
       x.y = x.y + math.sin(zombie_angle_wrld(x)) * x.speed * dt
     elseif expDistance < collectionDist then
-      exp.currentXP = exp.currentXP + exp.value
+      local factor = 1
+      if despawning then factor = 2 end
+      exp.currentXP = exp.currentXP + (exp.value/factor)
       
       if exp.currentXP >= exp.expRequirement then levelUp() end
       
@@ -49,7 +51,7 @@ function updateXP(dt, magnet)
       expBarTweenCurr.w = prevTarget
       xpTween = tween.new(.1, expBarTweenCurr, expBarTweenTarget)
       
-      TextManager.collectXPPopup(x.x, x.y, tostring(exp.value))
+--      TextManager.collectXPPopup(x.x, x.y, tostring(exp.value))
       x.collected = true
       love.audio.play(soundFX.collectCoin)
     end
@@ -67,6 +69,7 @@ function levelUp()
   exp.currentXP = exp.currentXP - exp.expRequirement -- carry over leftover xp to next level
   exp.expRequirement = exp.expRequirement * exp.levelMulti
   exp.currentLevel = exp.currentLevel + 1
+  love.audio.play(soundFX.levelup)
 end
 
 function drawXP()

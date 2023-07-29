@@ -1,4 +1,5 @@
 local GrenadeParticleManager = require('particleManager')
+local gold = require('gold')
 
 grenades = {}
 explosions = {}
@@ -65,7 +66,7 @@ function spawnGrenade(game)
           z.dead = true
           game.totalKilled = game.totalKilled + 1
           game.currentKilled = game.currentKilled + 1
-          spawnGoldReward(z)
+          gold:reward(z)
           spawnXPReward(z)
           powerupChance(z)
           

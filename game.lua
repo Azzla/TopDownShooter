@@ -1,4 +1,5 @@
 local game = {}
+local pause = require('states/pause')
 
 --states
 local shop = require('shop')
@@ -16,7 +17,7 @@ require('zombie')
 require('bullets')
 require('grenades')
 require('healthbar')
-require('gold')
+local gold = require('gold')
 require('expManager')
 require('gameCam')
 require('energy')
@@ -34,15 +35,17 @@ local function drawObjects()
   --sort by which sprites should appear on top of others
   drawZombies()
   drawBullets()
-  drawCoins()
+  gold:draw()
   drawXP()
-  drawPowerups()
+--  drawPowerups()
   drawGrenades()
 end
 
 function game:init()
+  gold:init()
+  
   self.textManager = require('textManager')
-  self.inventory = require('inventoryManager').init()
+--  self.inventory = require('inventoryManager').init()
   self.main_canvas = love.graphics.newCanvas(map_width, map_height)
   self.main_canvas:renderTo(function()
     mainMap:drawTileLayer(mainMap.layers["Background"])
@@ -88,12 +91,12 @@ function game:update(dt)
   
   cameraHandler(dt, player.x, player.y, currentZoom.zoom)
   updateMelee(dt, player_angle())
-  zombieUpdate(dt, self)
+  zombieUpdate(dt, self, player)
   bulletUpdate(dt)
   autoShoot(dt)
   grenadeUpdate(dt)
-  updateGold(dt, shop.skills.magnet)
-  updateXP(dt, shop.skills.magnet)
+  gold:update(dt, shop.skills.magnet, self.isDespawning)
+  updateXP(dt, shop.skills.magnet, self.isDespawning)
   energyUpdate(dt)
   powerupUpdate(dt, self, shop.skills.magnet)
   
@@ -105,7 +108,7 @@ function game:update(dt)
   end
 end
 
-function game:draw()
+function game:draw(paused)
   cam:zoomTo(currentZoom.zoom)
   cam:attach()
   
@@ -115,7 +118,7 @@ function game:draw()
   
   --Objects
   drawObjects()
-  --collisionDebug()
+--  collisionDebug()
   if not melee.active then drawGuns() end
   
   --Player
@@ -129,10 +132,8 @@ function game:draw()
   if melee.active then
     drawMelee()
   else
-    player:draw()
+    if not paused then player:draw() end
   end
-  
-  pausedAngle = player_angle()
   love.graphics.setShader()
 
   --In-Game Text
@@ -146,14 +147,14 @@ function game:draw()
   if guns.equipped == guns['railgun'] then fix = 60 end
   local offX,offY = offsetXY(guns.equipped.bulletOffsX,guns.equipped.bulletOffsY+fix,player_angle())
   
-  love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
-  love.graphics.setShader()
+  love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,-offX,-offY)
+
+  cam:detach()
   
-  self:drawUI()
+  if not paused then self:drawUI() end
 end
 
 function game:drawUI()
-  cam:detach()
   cam:zoomTo(game.uiZoom)
   --useful camera-translated coordinates
   local origin,origin2,origin2Bot,originRight,originXCenter,originYCenter = cameraCoordinates(cam, 6)
@@ -178,7 +179,7 @@ function game:drawUI()
   love.graphics.printf(math.ceil(self.roundTime), originRight - 25, origin2 + 5, 50)
   
   --Inventory
-  game.inventory:draw(originXCenter, origin2)
+--  game.inventory:draw(originXCenter, origin2)
   
   --UI Text
   self.textManager.drawUI(origin,origin2,origin2Bot,originRight,originXCenter,originYCenter)
@@ -226,7 +227,7 @@ function game:despawning()
     shop.skills.magnet = shop.skills.magnet / self.despawnMagBonus
     self.difficulty = self.difficulty + 1
     
-    Gamestate.switch(shop)
+    Gamestate.switch(shop, gold)
   end)
 end
 
@@ -236,6 +237,8 @@ function game:keypressed(key)
   elseif key == "escape" then
     player:destroy()
     Gamestate.switch(self.picker)
+  elseif key == "p" then
+    Gamestate.switch(pause)
   elseif key == "right" then
     game:despawning()
   elseif key == 'f' then
@@ -247,7 +250,7 @@ function game:keypressed(key)
   else
     gunKeybinds(key)
     player:keybinds(key, shop.skills.speed)
-    self.inventory:keybinds(key)
+--    self.inventory:keybinds(key)
   end
 end
 
@@ -277,6 +280,7 @@ function game:mousereleased(x, y, btn)
 end
 
 function game:enter(previous, character)
+  if previous == shop then gold.total = previous.goldRef.total end
   if not self.picker then self.picker = previous end
   if previous == self.picker then
     self:removeObjects()
@@ -295,8 +299,8 @@ function game:removeObjects(removeParams) -- { zombies = true, powerups = true }
     end
   end
   if not _table.coins then
-    for i=#coins,1,-1 do
-      local c = coins[i]
+    for i=#gold.activeCoins,1,-1 do
+      local c = gold.activeCoins[i]
       c.collected = true
     end
   end

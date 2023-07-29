@@ -1,9 +1,8 @@
 local menu = {}
 
 function menu:init()
-  self.background = love.graphics.newImage('sprites/ui/mainMenu.png')
-  self.bgWidth = self.background:getWidth()
-  self.bgHeight = self.background:getHeight()
+  self.background = function() love.graphics.rectangle('fill', 0, 0, SCREEN_W, SCREEN_H) end
+  self.bgColor = { rgb(63), rgb(40), rgb(50), 1 }
   self.button = love.graphics.newImage('sprites/ui/UIBox1.png')
   self.buttonHover = love.graphics.newImage('sprites/ui/UIBox1Hover.png')
   self.buttonScale = 8
@@ -23,8 +22,10 @@ end
 
 function menu:draw()
   local ret1, ret2 = love.mouse:getPosition()
-  love.graphics.draw(self.background, 0, 0, nil, SCREEN_W / self.bgWidth, SCREEN_H / self.bgHeight)
-
+  love.graphics.setColor(self.bgColor)
+  self.background()
+  love.graphics.setColor(1,1,1,1)
+  
   self.buttonManager.draw(ret1, ret2)
   
   --Text

@@ -1,22 +1,24 @@
-local shopButtonManager = require('buttonManager')
-
 local shop = {}
-shop.skills = {}
-shop.skills.price = 100
-shop.skills.grenades = 100
-shop.skills.damage = 0
-shop.skills.damPurch = 0
-shop.skills.speedPurch = 0
-shop.skills.reloadPurch = 0
-shop.skills.magPurch = 0
-shop.skills.ammoPurch = 0
-shop.skills.maxAmmo = 0
-shop.skills.reload = 0
-shop.skills.speed = 0
-shop.skills.magnet = 1
-shop.rate = 1
+shop.skills = {
+  price         = 2,
+  grenades      = 10,
+  --bonuses
+  damage        = 0,
+  maxAmmo       = 0,
+  reload        = 0,
+  speed         = 0,
+  magnet        = 1,
+  rate          = 1,
+  --how many times each upgrade is purchased this run
+  damPurch      = 0,
+  speedPurch    = 0,
+  reloadPurch   = 0,
+  magPurch      = 0,
+  ammoPurch     = 0,
+}
 
 function shop:init()
+  self.btnManager = require('buttonManager')
   self.btnsCreated = false
   self.buttons = nil
   self.timer = globalTimer.new()
@@ -53,42 +55,42 @@ function shop:init()
   self.skillList = { "damPurch", "reloadPurch", "ammoPurch", "speedPurch", "magPurch" }
   self.purchases = {
     function()
-      if gold.total >= self.skills.price then
+      if self.goldRef.total >= self.skills.price then
         self.skills.damage = self.skills.damage + 1
         self.skills.damPurch = self.skills.damPurch + 1
         self:purchase()
       end
     end,
       function()
-      if gold.total >= self.skills.price then
+      if self.goldRef.total >= self.skills.price then
         self.skills.reload = self.skills.reload + 1
         self.skills.reloadPurch = self.skills.reloadPurch + 1
         self:purchase()
       end
     end,
       function()
-      if gold.total >= self.skills.price then
+      if self.goldRef.total >= self.skills.price then
         self.skills.maxAmmo = self.skills.maxAmmo + 1
         self.skills.ammoPurch = self.skills.ammoPurch + 1
         self:purchase()
       end
     end,
     function()
-      if gold.total >= self.skills.price then
+      if self.goldRef.total >= self.skills.price then
         self.skills.speed = self.skills.speed + 20
         self.skills.speedPurch = self.skills.speedPurch + 1
         self:purchase()
       end
     end,
     function()
-      if gold.total >= self.skills.price then
+      if self.goldRef.total >= self.skills.price then
         self.skills.magnet = self.skills.magnet * 1.20
         self.skills.magPurch = self.skills.magPurch + 1
         self:purchase()
       end
     end,
     function()
-      if gold.total >= self.skills.price and player.hp < player.maxHp then
+      if self.goldRef.total >= self.skills.price and player.hp < player.maxHp then
         player:addHealth()
         self:purchase()
       end
@@ -104,8 +106,8 @@ function shop:update(dt)
     local b = self.buttons[i]
     if not b then return end
     if b.clicked >= 20 then
-      shopButtonManager.remove(i)
-      self.buttons = shopButtonManager.getButtons()
+      self.btnManager.remove(i)
+      self.buttons = self.btnManager.getButtons()
     end
   end
 end
@@ -126,8 +128,9 @@ function shop:draw()
   cam:zoomTo(currentZoom.zoom)
 end
 
-function shop:enter(previous)
+function shop:enter(previous, gold)
   if not self.game then self.game = previous end
+  self.goldRef = gold
 end
 
 local function uiBox(skill, x, y, num)
@@ -158,22 +161,22 @@ function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,orig
     for i=1,#self.purchases do
       local fn = self.purchases[i]
       if i == 1 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 60, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter - 105, origin2 + 60, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 2 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 90, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter - 105, origin2 + 90, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 3 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 120, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter - 105, origin2 + 120, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 4 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 150, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter - 105, origin2 + 150, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 5 then
-        shopButtonManager.new(originXCenter - 105, origin2 + 180, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter - 105, origin2 + 180, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       elseif i == 6 then
-        shopButtonManager.new(originXCenter + 22, origin2 + 155, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
+        self.btnManager.new(originXCenter + 22, origin2 + 155, fn, self.buttonSprite, self.buttonSpriteHot, 1, nil, soundFX.btnHover)
       end
       
-      shopButtonManager.new(originXCenter + 56, origin2Bot - 40, nextRound, self.continue, self.continueHover, 1, soundFX.charSelect, soundFX.btnHover)
+      self.btnManager.new(originXCenter + 56, origin2Bot - 40, nextRound, self.continue, self.continueHover, 1, soundFX.charSelect, soundFX.btnHover)
     end
-    self.buttons = shopButtonManager.getButtons()
+    self.buttons = self.btnManager.getButtons()
     self.btnsCreated = true
   end
   
@@ -188,7 +191,7 @@ function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,orig
       end
     end
     
-    shopButtonManager.draw(ret1, ret2)
+    self.btnManager.draw(ret1, ret2)
     
     local iconXOff = 210
     local iconScale = 1.5
@@ -221,27 +224,27 @@ function shop:displayUI(origin,origin2,origin2Bot,originRight,originXCenter,orig
   love.graphics.print("Next Round", originXCenter + 61, origin2Bot - 36.5, nil, self.textScale, self.textScale)
   
   --Gold & Reticle
-  love.graphics.printf(math.floor(gold.total), origin + 20, origin2 + 4, 100, "left")
-  love.graphics.draw(gold.bigSprite, origin + 2, origin2 + 2)
+  love.graphics.printf(math.floor(self.goldRef.total), origin + 20, origin2 + 4, 100, "left")
+  love.graphics.draw(self.goldRef.bigSprite, origin + 2, origin2 + 2)
   love.graphics.draw(reticle, ret1, ret2,nil,nil,nil,3,3)
 end
 
 function shop:leave()
   self.btnsCreated = false
-  shopButtonManager.clear()
+  self.btnManager.clear()
 end
 
 function shop:purchase()
   love.audio.stop(soundFX.makePurchase)
   love.audio.play(soundFX.makePurchase)
-  gold.total = gold.total - self.skills.price
+  self.goldRef.total = self.goldRef.total - self.skills.price
   self.skills.price = self.skills.price + 2
   self.skills.healthPrice = self.skills.price
 end
 
 function shop:reset()
   self.btnsCreated = false
-  shopButtonManager.clear()
+  self.btnManager.clear()
 end
 
 return shop

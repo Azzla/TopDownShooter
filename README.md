@@ -1,18 +1,19 @@
 # TopDownShooter
-My first ever, disastrously organized, minimally scoped game.  Top-Down shooter style arcade game where rounds and zombies get progressively more difficult.  Collect coins and upgrade your skills to survive as long as you can!  Written in LUA using the LOVE2D engine.
+My first longterm game project. Utilizes rogue-like mechanics/progression. Features custom music, sound effects, and (terrible) pixel art by me.
+
+Written in Lua, using the excellent LOVE2D engine.
 
 Movement: WASD
-
 Shoot: Mouse1
-
 Reload: R
-
 Dash: Spacebar
-
-Shop: Shift
-
 Pause: Escape
-
 Quit Game: End
 
-Credits to the HUMP, anim8, and STI libraries.
+Huge thanks for the following libraries:
+
+- HUMP (camera, timers, gamestates), HardonCollider by vlrd
+- Tween, Anim8 by kikito
+- Typo by Eamonn Rea
+- Floating Text by MrcSnm
+- Simple Tiled Implementation by karai17

@@ -2,6 +2,7 @@ local ZombieParticleManager = require('particleManager')
 local DecisionTrees = require('dicts/decisionTrees')
 local TextManager = require('textManager')
 local zombieTypes = require('dicts/zombsDict')
+local gold = require('gold')
 
 zombies = {}
 
@@ -96,6 +97,7 @@ function zombieUpdate(dt, game)
   shootTimer:update(dt)
   DecisionTrees.update(dt)
   spawnTweenTimer:update(dt)
+  
   for i,z in ipairs(zombies) do
     ZombieParticleManager.update(z.p.psys, dt)
     z.tween:update(dt)
@@ -144,7 +146,7 @@ function zombieDies(obj, z, game)
   
   game.totalKilled = game.totalKilled + 1
   game.currentKilled = game.currentKilled + 1
-  spawnGoldReward(z)
+  gold:reward(z)
   spawnXPReward(z)
   powerupChance(z)
 end

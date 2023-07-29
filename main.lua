@@ -14,11 +14,11 @@ love.graphics.setDefaultFilter("nearest", "nearest")
 local menu = require('menu')
 local pickplayer = require('states/pickPlayer')
 local game = require('game')
-local pause = {}
 local gameOver = {}
+local states = { menu, pickplayer, game = game, gameOver}
 
 function love.load()
-  love.window.setMode(0, 0)
+  love.window.setMode(1920, 1080)
   SCREEN_W = love.graphics.getWidth()
   SCREEN_H = love.graphics.getHeight()
   
@@ -27,15 +27,20 @@ function love.load()
   
   --font
   pixelFont = love.graphics.newFont('fonts/Minecraft.ttf', 16)
+  imageFont = love.graphics.newImageFont('fonts/imagefont_test.png',
+    " abcdefghijklmnopqrstuvwxyz" ..
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0" ..
+    "123456789.,!?-+/():;%&`'*#=[]\"")
   love.graphics.setFont(pixelFont)
   pixelFont:setFilter( "nearest", "nearest" )
+  imageFont:setFilter("nearest", "nearest")
 
   reticle = love.graphics.newImage('sprites/cursor.png')
   love.mouse.setVisible(false)
 end
 
 function love.update(dt)
-  gameMusic(dt, game)
+  gameMusic(dt, states)
   globalTimer.update(dt)
 end
 
@@ -103,11 +108,11 @@ function shallowCopy(original)
 	return copy
 end
 
-function player_angle()
-  local a,b = cam:cameraCoords(cam:mousePosition())
-  local c,d = cam:cameraCoords(player.x, player.y)
-  return math.atan2(d - b, c - a) - math.pi/2
-end
+--function player_angle()
+--  local a,b = cam:cameraCoords(cam:mousePosition())
+--  local c,d = cam:cameraCoords(player.x, player.y)
+--  return math.atan2(d - b, c - a) - math.pi/2
+--end
 
 function zombie_angle(enemy)
   local a,b = cam:cameraCoords(enemy.x, enemy.y)
